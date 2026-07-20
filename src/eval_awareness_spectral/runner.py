@@ -88,6 +88,7 @@ class RunConfig:
     num_eigenvalues: int = 50
     directed: bool = True
     cells: List[Tuple[str, str]] = field(default_factory=lambda: list(DEFAULT_CELLS))
+    position_match: bool = False  # pad preambles so the task starts at the same token index
     output_dir: str = "./results"
     tasks_path: Optional[str] = None
     framings_path: Optional[str] = None
@@ -250,7 +251,8 @@ def run_model(rc: RunConfig) -> pd.DataFrame:
         framework.instrumenter.load_model(rc.hf_id)
         tokenizer = framework.instrumenter.tokenizer
 
-        prompts = build_prompts(tasks, conditions, tokenizer, only_conditions=rc.conditions)
+        prompts = build_prompts(tasks, conditions, tokenizer, only_conditions=rc.conditions,
+                                position_match=rc.position_match)
         spans, skip_subgraph = _compute_spans(prompts, tokenizer, rc.max_length)
 
         for run_idx in range(rc.runs):

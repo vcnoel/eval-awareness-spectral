@@ -68,7 +68,8 @@ def extract_activations(rc: RunConfig, out_npz: Optional[str] = None) -> Dict:
         logger.info("Loading %s for activation extraction", rc.name)
         framework.instrumenter.load_model(rc.hf_id)
         tokenizer = framework.instrumenter.tokenizer
-        prompts = build_prompts(tasks, conditions, tokenizer, only_conditions=rc.conditions)
+        prompts = build_prompts(tasks, conditions, tokenizer, only_conditions=rc.conditions,
+                                position_match=rc.position_match)
 
         # spans (must be identical across conditions per task, same as the runner)
         spans, by_task = {}, {}

@@ -30,10 +30,10 @@ class Condition:
     system: str
     user_template: str
 
-    def render_messages(self, task_text: str) -> List[Dict[str, str]]:
+    def render_messages(self, task_text: str, user_prefix: str = "") -> List[Dict[str, str]]:
         return [
             {"role": "system", "content": self.system},
-            {"role": "user", "content": self.user_template.format(task=task_text)},
+            {"role": "user", "content": user_prefix + self.user_template.format(task=task_text)},
         ]
 
 
@@ -104,19 +104,65 @@ def apply_chat_template(tokenizer, messages: List[Dict[str, str]]) -> str:
         )
 
 
+# Neutral filler used to position-match frames. Repeated whitespace/period units
+# carry ~no evaluative or deployment semantics; a paper should verify robustness to
+# this choice with a second filler (e.g. " and").
+_POS_FILLER = " ."
+
+
+def _preamble_start(tokenizer, cond: Condition, user_prefix: str, probe_task: str,
+                    max_length: int) -> int:
+    """Token index at which the task begins — depends only on the preamble, not the
+    task content, so any probe_task gives the right answer."""
+    from .spans import locate_task_span, SpanError
+    text = apply_chat_template(tokenizer, cond.render_messages(probe_task, user_prefix))
+    try:
+        return locate_task_span(tokenizer, text, probe_task, max_length).start
+    except SpanError:
+        return -1
+
+
+def _position_match_prefixes(conditions: Dict[str, Condition], keys, tokenizer,
+                             max_length: int, filler: str, margin: int) -> Dict[str, str]:
+    """Per-condition user_prefix (repeated filler) so every condition's task starts
+    at the SAME token index — removing absolute-position (RoPE) as a confound."""
+    probe = "PLACEHOLDER TASK CONTENT FOR ALIGNMENT."
+    starts0 = {k: _preamble_start(tokenizer, conditions[k], "", probe, max_length) for k in keys}
+    target = max(starts0.values()) + margin
+    prefixes = {}
+    for k in keys:
+        pref, reps = "", 0
+        while _preamble_start(tokenizer, conditions[k], pref, probe, max_length) < target and reps < 4000:
+            reps += 1
+            pref = filler * reps
+        prefixes[k] = pref
+    return prefixes
+
+
 def build_prompts(
     tasks: List[Task],
     conditions: Dict[str, Condition],
     tokenizer,
     only_conditions: Optional[List[str]] = None,
+    position_match: bool = False,
+    filler: str = _POS_FILLER,
+    pos_margin: int = 2,
 ) -> List[Prompt]:
-    """Produce one chat-templated Prompt per (task, condition)."""
+    """Produce one chat-templated Prompt per (task, condition).
+
+    If ``position_match`` is set, each condition's preamble is padded with neutral
+    filler so the (byte-identical) task tokens begin at the same absolute token
+    index in every frame — closing the RoPE/position shortcut a probe could exploit.
+    """
     keys = only_conditions or list(conditions.keys())
+    prefixes = ({k: "" for k in keys} if not position_match
+                else _position_match_prefixes(conditions, keys, tokenizer,
+                                              max_length=512, filler=filler, margin=pos_margin))
     prompts: List[Prompt] = []
     for task in tasks:
         for key in keys:
             cond = conditions[key]
-            messages = cond.render_messages(task.task)
+            messages = cond.render_messages(task.task, user_prefix=prefixes[key])
             text = apply_chat_template(tokenizer, messages)
             prompts.append(
                 Prompt(

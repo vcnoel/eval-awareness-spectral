@@ -56,6 +56,8 @@ def main():
     ap.add_argument("--n-perm", type=int, default=300)
     ap.add_argument("--n-boot", type=int, default=200)
     ap.add_argument("--skip-causal", action="store_true")
+    ap.add_argument("--position-match", action="store_true",
+                    help="pad preambles so the task starts at the same token index in every frame")
     ap.add_argument("--fresh", action="store_true", help="recompute steps 1-2 even if cached")
     args = ap.parse_args()
 
@@ -67,8 +69,11 @@ def main():
         name=args.model, hf_id=args.hf_id, dtype="float32", device="cuda",
         conditions=conditions, cells=[("full", "rw"), ("task_subgraph", "rw")],
         directed=False,  # not needed for the probe comparison; keep smoke fast
+        position_match=args.position_match,
         output_dir=str(out), tasks_path=tasks_path,
     )
+    if args.position_match:
+        log.info("POSITION-MATCHED frames enabled (task starts at same token index)")
 
     long_csv = out / rc.name / "diagnostics_long.csv"
     npz_path = out / rc.name / "activations.npz"

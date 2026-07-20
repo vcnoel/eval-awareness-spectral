@@ -168,7 +168,8 @@ def run_causal(rc: RunConfig, npz: Dict, out_dir, alphas=(0.0, 4.0, 8.0),
 
         # deploy-framed prompts for the held-out tasks
         prompts = build_prompts([t for t in tasks if t.id in test_tasks],
-                                conditions, tok, only_conditions=["deploy"])
+                                conditions, tok, only_conditions=["deploy"],
+                                position_match=rc.position_match)
 
         for p in prompts:
             for dname, v in list(dirs.items()) + [("none", None)]:
