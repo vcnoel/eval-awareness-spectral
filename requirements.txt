@@ -1,0 +1,20 @@
+# Core dependency: the spectral diagnostics library.
+# Install into the `gemma_spectral` conda env:
+#   pip install spectral-trust==0.2.2
+# Pinned exactly: 0.2.2 changed the metric surface (dropped gini) and fixed the
+# rw-Laplacian eigensolver, so results are NOT comparable across versions.
+spectral-trust==0.2.2
+
+# scikit-learn: leave-task-out separability probe (analysis, not pulled by spectral-trust).
+scikit-learn
+
+# Everything below is pulled in transitively by spectral-trust, listed for clarity.
+torch
+transformers
+accelerate
+numpy
+pandas
+scipy
+matplotlib
+seaborn
+tqdm

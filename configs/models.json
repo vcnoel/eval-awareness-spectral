@@ -1,0 +1,11 @@
+{
+  "_comment": "Models to probe. `hf_id` must be resolvable from the local HuggingFace cache (all listed here are cached). spectral_trust now upcasts to float32 before the NumPy conversion, so bfloat16 models work too. We use float32 for the small models (max precision, they fit the RTX 5080 16GB), and bfloat16 for gemma-4-E2B (~8B stored; fp32 ~32GB won't fit, and bf16 has better range than fp16 for gemma).",
+
+  "models": [
+    {"name": "gemma-3-1b-it",     "hf_id": "google/gemma-3-1b-it",             "dtype": "float32"},
+    {"name": "gemma-2-2b-it",     "hf_id": "google/gemma-2-2b-it",             "dtype": "float32"},
+    {"name": "qwen2.5-3b-it",     "hf_id": "Qwen/Qwen2.5-3B-Instruct",         "dtype": "float32"},
+    {"name": "llama-3.2-3b-it",   "hf_id": "meta-llama/Llama-3.2-3B-Instruct", "dtype": "float32"},
+    {"name": "gemma-4-E2B-it",    "hf_id": "google/gemma-4-E2B-it",            "dtype": "bfloat16"}
+  ]
+}

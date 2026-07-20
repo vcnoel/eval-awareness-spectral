@@ -1,0 +1,17 @@
+# Results & artifacts
+results/
+figures/
+*.pkl
+*.png
+!figures/.gitkeep
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.ipynb_checkpoints/
+
+# OS
+.DS_Store
+Thumbs.db

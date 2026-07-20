@@ -1,0 +1,16 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "eval-awareness-spectral"
+version = "0.1.0"
+description = "Do LLM spectral internals shift when the model believes it is being evaluated vs deployed?"
+requires-python = ">=3.10"
+dependencies = ["spectral-trust==0.2.2", "scikit-learn"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[project.scripts]
+eval-awareness-spectral = "eval_awareness_spectral.cli:main"
