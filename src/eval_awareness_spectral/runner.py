@@ -47,7 +47,7 @@ import spectral_trust
 from spectral_trust import GSPConfig, GSPDiagnosticsFramework
 
 from .prompts import Condition, Task, build_prompts, load_framings, load_tasks
-from .spans import TaskSpan, assert_task_spans_identical, locate_task_span, SpanError
+from .spans import TaskSpan, locate_task_span, reconcile_task_spans, SpanError
 
 logger = logging.getLogger(__name__)
 
@@ -221,15 +221,19 @@ def _compute_spans(prompts, tokenizer, max_length: int):
         except SpanError as e:
             logger.warning("task %s/%s: span location failed (%s)", p.task_id, p.condition, e)
             span = None
-        spans[(p.task_id, p.condition)] = span
         by_task.setdefault(p.task_id, {})[p.condition] = span
 
     skip = set()
     for task_id, cond_spans in by_task.items():
-        if any(v is None for v in cond_spans.values()) or not assert_task_spans_identical(cond_spans):
-            skip.add(task_id)
+        # keep the majority tokenization; null out only outlier conditions
+        reconciled = reconcile_task_spans(cond_spans)
+        for cond, v in reconciled.items():
+            spans[(task_id, cond)] = v
+        if sum(v is not None for v in reconciled.values()) < 2:
+            skip.add(task_id)  # too few comparable frames to pair
     if skip:
-        logger.warning("subgraph disabled for %d task(s): %s", len(skip), sorted(skip))
+        logger.warning("subgraph unusable for %d task(s) (<2 comparable frames): %s",
+                       len(skip), sorted(skip))
     return spans, skip
 
 

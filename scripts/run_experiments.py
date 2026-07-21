@@ -103,6 +103,11 @@ def main():
         log.info("STEP 2/4 activation extraction")
         npz = extract_activations(rc, out_npz=str(npz_path))
 
+    if long_df.empty or "graph_scope" not in long_df.columns:
+        log.error("spectral step produced no rows (all subgraphs skipped?) — aborting. "
+                  "Check span warnings above.")
+        return
+
     # confound check A: identical node set + position gap for the headline contrast
     _confound_report(long_df, npz)
 

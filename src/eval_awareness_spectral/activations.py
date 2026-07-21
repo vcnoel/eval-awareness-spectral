@@ -31,7 +31,7 @@ from spectral_trust import GSPDiagnosticsFramework
 
 from .prompts import Condition, Task, build_prompts, load_framings, load_tasks
 from .runner import RunConfig, _free_cuda, _gsp_config
-from .spans import assert_task_spans_identical, locate_task_span, SpanError
+from .spans import locate_task_span, reconcile_task_spans, SpanError
 
 logger = logging.getLogger(__name__)
 
@@ -71,7 +71,8 @@ def extract_activations(rc: RunConfig, out_npz: Optional[str] = None) -> Dict:
         prompts = build_prompts(tasks, conditions, tokenizer, only_conditions=rc.conditions,
                                 position_match=rc.position_match)
 
-        # spans (must be identical across conditions per task, same as the runner)
+        # spans: keep the majority tokenization per task, null outliers (same policy
+        # as the runner) so activation pooling uses the identical task-token set.
         spans, by_task = {}, {}
         for p in prompts:
             try:
@@ -80,13 +81,13 @@ def extract_activations(rc: RunConfig, out_npz: Optional[str] = None) -> Dict:
                     s = None
             except SpanError:
                 s = None
-            spans[(p.task_id, p.condition)] = s
             by_task.setdefault(p.task_id, {})[p.condition] = s
-        skip = {t for t, cs in by_task.items()
-                if any(v is None for v in cs.values()) or not assert_task_spans_identical(cs)}
+        for task_id, cs in by_task.items():
+            for cond, v in reconcile_task_spans(cs).items():
+                spans[(task_id, cond)] = v
 
         for p in tqdm(prompts, desc=f"{rc.name} activations", leave=False):
-            if p.task_id in skip:
+            if spans.get((p.task_id, p.condition)) is None:
                 continue
             span = spans[(p.task_id, p.condition)]
             try:

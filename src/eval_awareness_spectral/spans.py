@@ -157,6 +157,29 @@ def _find_subsequence(haystack: Sequence[int], needle: Sequence[int]) -> int:
     return -1
 
 
+def reconcile_task_spans(spans_by_condition: dict) -> dict:
+    """Keep the majority task tokenization; null out only the outlier condition(s).
+
+    Position-matching can perturb the task's *boundary* token in one frame (e.g. a
+    bare ``{task}`` template vs one ending in ``\\n\\n{task}``), shifting its span by
+    a token. Rather than discard the whole task, we keep every condition whose task
+    token-ids match the modal tokenization and drop only the deviants — so the
+    comparable frames still yield subgraphs on an identical node set.
+    """
+    from collections import Counter
+    valid = {k: v for k, v in spans_by_condition.items() if v is not None}
+    if len(valid) < 2:
+        return dict(spans_by_condition)
+    modal_ids, _ = Counter(v.token_ids for v in valid.values()).most_common(1)[0]
+    out = {}
+    for k, v in spans_by_condition.items():
+        out[k] = v if (v is not None and v.token_ids == modal_ids) else None
+    dropped = [k for k, v in out.items() if v is None and spans_by_condition.get(k) is not None]
+    if dropped:
+        logger.warning("dropped %s from subgraph (task tokenization differs from majority)", dropped)
+    return out
+
+
 def assert_task_spans_identical(spans_by_condition: dict) -> bool:
     """True iff every condition's task span has the same token ids (same length).
 
