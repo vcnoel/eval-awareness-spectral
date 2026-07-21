@@ -1,0 +1,84 @@
+---
+name: runpod-connect
+description: Connect to a RunPod GPU pod over SSH and run this repo's scaling experiments on it (Qwen ladder crystallization + spectral transfer). Use when the user wants to run the eval-awareness experiments on a rented cloud GPU (A100/H100), set up the pod environment, or drive it from a local machine. Covers the exact gotchas (PEP 668, torch-safe install, HF_HOME, disk) that bite on a fresh pod.
+---
+
+# Connect to RunPod and run the scaling experiments
+
+The local machine's shell tools do NOT run on the pod — drive the pod over SSH from the
+local shell. RunPod exposes the pod's SSH on a **Direct TCP** endpoint (not port 22 on the
+pod's public IP): find it in the pod page under *Direct TCP ports*, e.g. `195.26.233.38:58513 -> :22`.
+
+## 1. Authorize your key on the pod (instant, no pod restart)
+
+The pod must trust the **local** private key your SSH will use (default `~/.ssh/id_ed25519`).
+Do NOT run RunPod's `ssh-keygen` wizard if you already have a key — it makes a *different* key.
+
+Print your local public key:
+```bash
+cat ~/.ssh/id_ed25519.pub    # if missing: ssh-keygen -t ed25519
+```
+Open the pod's **web terminal** (button on the pod page) and paste (with YOUR pubkey):
+```bash
+mkdir -p ~/.ssh && chmod 700 ~/.ssh && echo "<YOUR_PUBKEY_LINE>" >> ~/.ssh/authorized_keys && chmod 600 ~/.ssh/authorized_keys && echo KEY_ADDED
+```
+(The RunPod "SSH public key" UI field also works but usually needs a pod restart; the
+web-terminal line is instant.)
+
+Test from the local shell (substitute the pod's host/port):
+```bash
+POD="-p 58513 root@195.26.233.38"
+ssh $POD -o StrictHostKeyChecking=accept-new 'nvidia-smi --query-gpu=name,memory.total --format=csv,noheader; df -h /workspace | tail -1'
+```
+
+## 2. Set up the environment (fresh pod gotchas)
+
+RunPod PyTorch images have CUDA torch preinstalled but a **PEP 668 externally-managed**
+Python, and are missing transformers/datasets/etc. Install torch-safely:
+```bash
+ssh $POD 'cd /workspace && git clone -q https://github.com/vcnoel/eval-awareness-spectral.git && cd eval-awareness-spectral \
+  && pip install -q --break-system-packages --no-deps "spectral-trust==0.2.2" \
+  && pip install -q --break-system-packages "transformers>=4.44" accelerate scipy scikit-learn datasets pandas tqdm matplotlib seaborn'
+```
+Key points:
+- `--break-system-packages` — required (PEP 668) to install into the same env as the pod's torch.
+- `--no-deps` on spectral-trust — do NOT let it reinstall torch (would clobber the CUDA build with a CPU wheel). Then install its real deps explicitly (matplotlib + seaborn are needed or import fails).
+- `spectral_trust.__version__` may be absent — harmless; the repo falls back to "0.2.2".
+
+## 3. Disk: point HF at the volume, container disk stays tiny
+
+Container disk (`/`, ~30 GB, also holds `/tmp`) is small; the persistent volume `/workspace`
+is huge. Set `HF_HOME=/workspace/hf` so ~120 GB of weights land on the volume — then container
+disk never fills and you do NOT need to increase it. Verify: `df -h / ; df -h /workspace`.
+
+## 4. Run the scaling ladder (detached, survives disconnect)
+
+```bash
+ssh $POD 'cd /workspace/eval-awareness-spectral && export PYTHONPATH=src HF_HOME=/workspace/hf PYTHONUNBUFFERED=1 \
+  && nohup python scripts/run_pod_scaling.py --max-b 32 > scaling.log 2>&1 & echo started'
+# watch:
+ssh $POD 'tail -n 40 /workspace/eval-awareness-spectral/scaling.log'
+```
+- Smoke first: `--max-b 3` (Qwen 0.5/1.5/3B, ~10 GB) to confirm the pipeline, then `--max-b 32`.
+- VRAM: bf16 fits through 32B on an 80 GB A100; 72B needs 2 GPUs (omitted). fp32 buys nothing —
+  diagnostics are float32/float64 regardless of weight dtype.
+- The driver downloads each Qwen2.5 model, extracts position-matched task-subgraph spectral +
+  per-token activations, then prints the CRYSTALLIZATION, TRANSFER, and per-model SELECTIVITY
+  tables (the F1–F3 decision, see `docs/laws.md`). CSVs land in `results/pod_scaling/`.
+
+## 5. Pull results back / interpret
+
+Copy the printed tables from `scaling.log`, or `scp` the CSVs:
+```bash
+scp -P 58513 -r root@195.26.233.38:/workspace/eval-awareness-spectral/results/pod_scaling ./results/
+```
+Then locally: `python -m eval_awareness_spectral.law_mining` etc. re-print from the CSVs.
+
+## Quick reference — the whole thing in one block
+```bash
+POD="-p <PORT> root@<HOST>"                                  # from RunPod Direct TCP
+cat ~/.ssh/id_ed25519.pub                                    # paste into pod web terminal authorized_keys
+ssh $POD -o StrictHostKeyChecking=accept-new 'nvidia-smi -L'
+ssh $POD 'cd /workspace && git clone -q https://github.com/vcnoel/eval-awareness-spectral.git && cd eval-awareness-spectral && pip install -q --break-system-packages --no-deps spectral-trust==0.2.2 && pip install -q --break-system-packages "transformers>=4.44" accelerate scipy scikit-learn datasets pandas tqdm matplotlib seaborn'
+ssh $POD 'cd /workspace/eval-awareness-spectral && export PYTHONPATH=src HF_HOME=/workspace/hf PYTHONUNBUFFERED=1 && nohup python scripts/run_pod_scaling.py --max-b 32 > scaling.log 2>&1 & echo started'
+```
