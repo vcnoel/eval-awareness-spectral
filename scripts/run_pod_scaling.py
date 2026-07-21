@@ -81,6 +81,8 @@ def main():
                     help="task pool jsonl; e.g. data/tasks_bench.jsonl for the 60-task ICLR pool")
     ap.add_argument("--max-b", type=float, default=9.0,
                     help="skip models larger than this (9 fits a ~30GB volume with --purge-weights)")
+    ap.add_argument("--families", default=None,
+                    help="comma-separated family filter, e.g. qwen2.5 (default: all families in LADDER)")
     ap.add_argument("--purge-weights", action="store_true",
                     help="delete each model's weights after extraction (small volume disk)")
     ap.add_argument("--out", default=str(ROOT / "results" / "pod_scaling"))
@@ -98,7 +100,9 @@ def main():
     has_token = bool(os.environ.get("HF_TOKEN") or os.environ.get("HUGGING_FACE_HUB_TOKEN"))
     hf_cache = Path(os.environ.get("HF_HOME", str(Path.home() / ".cache/huggingface"))) / "hub"
 
-    ladder = [m for m in LADDER if m[2] <= args.max_b]
+    fam_filter = set(args.families.split(",")) if args.families else None
+    ladder = [m for m in LADDER if m[2] <= args.max_b
+             and (fam_filter is None or m[4] in fam_filter)]
     for name, hf_id, pb, dim, family, gated in ladder:
         if (out / name / "token_acts.pkl").exists():
             log.info("========== %s already done, skipping ==========", name)
