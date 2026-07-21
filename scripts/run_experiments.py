@@ -56,6 +56,8 @@ def main():
     ap.add_argument("--n-perm", type=int, default=300)
     ap.add_argument("--n-boot", type=int, default=200)
     ap.add_argument("--skip-causal", action="store_true")
+    ap.add_argument("--skip-battery", action="store_true",
+                    help="skip the (slow) baseline battery; run spectral+activations(+causal) only")
     ap.add_argument("--position-match", action="store_true",
                     help="pad preambles so the task starts at the same token index in every frame")
     ap.add_argument("--fresh", action="store_true", help="recompute steps 1-2 even if cached")
@@ -112,8 +114,12 @@ def main():
     _confound_report(long_df, npz)
 
     # ---- 3. baselines ----
-    log.info("STEP 3/4 baseline battery")
-    res = run_baseline_battery(long_df, npz, out, n_boot=args.n_boot, n_perm=args.n_perm)
+    res = pd.DataFrame()
+    if args.skip_battery:
+        log.info("STEP 3/4 baseline battery — SKIPPED (--skip-battery)")
+    else:
+        log.info("STEP 3/4 baseline battery")
+        res = run_baseline_battery(long_df, npz, out, n_boot=args.n_boot, n_perm=args.n_perm)
     if not res.empty:
         print("\n=== SELECTIVITY  S = AUC(eval-vs-deploy) - AUC(deploy-vs-placebo) ===")
         print(_selectivity_table(res).round(3).to_string(index=False))
