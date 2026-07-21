@@ -52,8 +52,13 @@ def _participation_ratio(M: np.ndarray) -> float:
     return float((np.sum(s2) ** 2) / denom)
 
 
-def extract_activations(rc: RunConfig, out_npz: Optional[str] = None) -> Dict:
-    """One forward pass per prompt; pool the task-token residual stream per layer."""
+def extract_activations(rc: RunConfig, out_npz: Optional[str] = None,
+                        save_token_acts: bool = False, token_acts_max_tasks: int = 8) -> Dict:
+    """One forward pass per prompt; pool the task-token residual stream per layer.
+
+    If ``save_token_acts``, also save the full per-task-token residual (fp16, capped to
+    ``token_acts_max_tasks`` tasks) to ``token_acts.pkl`` next to the npz — this powers the
+    DC/AC shift-magnitude test in `decomposition.py` (Theorem 1)."""
     tasks: List[Task] = load_tasks(rc.tasks_path)
     conditions: Dict[str, Condition] = load_framings(rc.framings_path)
     model_out_dir = Path(rc.output_dir) / rc.name
@@ -86,6 +91,10 @@ def extract_activations(rc: RunConfig, out_npz: Optional[str] = None) -> Dict:
             for cond, v in reconcile_task_spans(cs).items():
                 spans[(task_id, cond)] = v
 
+        # cap which tasks get full per-token dumps (for the DC/AC shift test)
+        tok_tasks = set(sorted({t for (t, _), s in spans.items() if s is not None})[:token_acts_max_tasks])
+        token_recs = []
+
         for p in tqdm(prompts, desc=f"{rc.name} activations", leave=False):
             if spans.get((p.task_id, p.condition)) is None:
                 continue
@@ -97,7 +106,8 @@ def extract_activations(rc: RunConfig, out_npz: Optional[str] = None) -> Dict:
                 continue
             idx = span.indices
             hs = mo["hidden_states"]  # list length L+1 of [1, seq, d] float32 cpu
-            per_layer_mean, per_layer_mom = [], []
+            per_layer_mean, per_layer_mom, per_layer_tok = [], [], []
+            keep_tok = save_token_acts and p.task_id in tok_tasks
             for h in hs:
                 S = h.squeeze(0)[idx].detach().cpu().numpy().astype(np.float32)  # [n_tok, d]
                 mean_v = S.mean(axis=0)
@@ -107,11 +117,16 @@ def extract_activations(rc: RunConfig, out_npz: Optional[str] = None) -> Dict:
                     float(np.mean(np.var(S, axis=0))),
                     _participation_ratio(S),
                 ])
+                if keep_tok:
+                    per_layer_tok.append(S.astype(np.float16))
             mean_vecs.append(np.stack(per_layer_mean))     # [L+1, d]
             moments.append(np.asarray(per_layer_mom))       # [L+1, 3]
             meta_task.append(p.task_id)
             meta_cond.append(p.condition)
             meta_start.append(span.start)
+            if keep_tok:
+                token_recs.append({"task_id": p.task_id, "condition": p.condition,
+                                   "tok": np.stack(per_layer_tok)})  # [L+1, n, d] fp16
             del mo
 
     out = {
@@ -125,6 +140,11 @@ def extract_activations(rc: RunConfig, out_npz: Optional[str] = None) -> Dict:
     if out_npz:
         Path(out_npz).parent.mkdir(parents=True, exist_ok=True)
         np.savez_compressed(out_npz, **out)
+        if save_token_acts and token_recs:
+            import pickle
+            with open(Path(out_npz).parent / "token_acts.pkl", "wb") as f:
+                pickle.dump(token_recs, f)
+            logger.info("Saved %d per-token records -> token_acts.pkl", len(token_recs))
         logger.info("Saved activations -> %s  mean_vec=%s moments=%s",
                     out_npz, out["mean_vec"].shape, out["moments"].shape)
     _free_cuda()
