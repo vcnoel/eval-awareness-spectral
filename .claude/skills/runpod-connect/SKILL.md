@@ -53,11 +53,14 @@ disk never fills and you do NOT need to increase it. Verify: `df -h / ; df -h /w
 
 ## 4. Run the scaling ladder (detached, survives disconnect)
 
+**Detach gotcha (important):** a plain `nohup python … & echo started` inside a *chained*
+one-line SSH command gets SIGHUP-killed when the SSH session closes (its process group dies).
+Use `setsid` + `</dev/null` + `disown` so it fully detaches:
 ```bash
 ssh $POD 'cd /workspace/eval-awareness-spectral && export PYTHONPATH=src HF_HOME=/workspace/hf PYTHONUNBUFFERED=1 \
-  && nohup python scripts/run_pod_scaling.py --max-b 32 > scaling.log 2>&1 & echo started'
-# watch:
-ssh $POD 'tail -n 40 /workspace/eval-awareness-spectral/scaling.log'
+  && setsid nohup python scripts/run_pod_scaling.py --max-b 32 >scaling.log 2>&1 </dev/null & disown'
+# verify it actually survived (run in a SEPARATE ssh a few seconds later):
+ssh $POD 'pgrep -af run_pod_scaling | grep -v grep; tail -3 /workspace/eval-awareness-spectral/scaling.log'
 ```
 - Smoke first: `--max-b 3` (Qwen 0.5/1.5/3B, ~10 GB) to confirm the pipeline, then `--max-b 32`.
 - VRAM: bf16 fits through 32B on an 80 GB A100; 72B needs 2 GPUs (omitted). fp32 buys nothing —
@@ -65,6 +68,28 @@ ssh $POD 'tail -n 40 /workspace/eval-awareness-spectral/scaling.log'
 - The driver downloads each Qwen2.5 model, extracts position-matched task-subgraph spectral +
   per-token activations, then prints the CRYSTALLIZATION, TRANSFER, and per-model SELECTIVITY
   tables (the F1–F3 decision, see `docs/laws.md`). CSVs land in `results/pod_scaling/`.
+
+## 4b. Monitor a long run from the local machine (one notification when done)
+
+SSH commands' stdout is buffered until the session returns, so don't pipe the run through
+`grep|tail` in the foreground (you see nothing until it ends). Instead poll the log file in a
+loop that exits when a near-end marker appears or the process dies:
+```bash
+D=/workspace/eval-awareness-spectral
+until ssh $POD "grep -q 'SPECTRAL TRANSFER' $D/scaling.log 2>/dev/null || ! pgrep -f run_pod_scaling >/dev/null"; do sleep 120; done
+ssh $POD "grep -E '=====|C4_taskindep|C10_eval_rank|mean OFF|params_b|qwen2.5|FAILED|OutOfMemory' $D/scaling.log | grep -viE 'it/s' | tail -60"
+```
+The `until` covers both success (marker present) and failure (process gone), so it never hangs
+silently on a crash. Progress spot-check any time: `ssh $POD "nvidia-smi --query-gpu=memory.used --format=csv,noheader; ls $D/results/pod_scaling/*/diagnostics_long.csv | wc -l"`.
+
+## Environment facts learned (RunPod PyTorch A100 pod)
+- Base image ships CUDA **torch** but **not** transformers/datasets/scikit-learn/matplotlib/seaborn/accelerate.
+- Python is PEP 668 externally-managed → every `pip install` needs `--break-system-packages`.
+- User is `root`; home is `/root`; persistent volume is `/workspace` (huge, network MFS);
+  container disk `/` is ~30 GB and also backs `/tmp` — keep big writes off it via `HF_HOME`.
+- Direct-TCP SSH endpoint (host\:port) changes every time you recreate a pod; the authorized_keys
+  entry is per-pod (re-add the key after recreating, or set it in RunPod account settings).
+- `spectral_trust.__version__` may be missing on 0.2.2 — harmless (repo falls back).
 
 ## 5. Pull results back / interpret
 
