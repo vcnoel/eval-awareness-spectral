@@ -82,6 +82,44 @@ ssh $POD "grep -E '=====|C4_taskindep|C10_eval_rank|mean OFF|params_b|qwen2.5|FA
 The `until` covers both success (marker present) and failure (process gone), so it never hangs
 silently on a crash. Progress spot-check any time: `ssh $POD "nvidia-smi --query-gpu=memory.used --format=csv,noheader; ls $D/results/pod_scaling/*/diagnostics_long.csv | wc -l"`.
 
+## Pushing code updates to the pod (do NOT rely on `git pull`)
+
+The pod often can't `git pull`: if the repo is **private** (or toggled private after the
+initial clone), `git fetch` errors `could not read Username` and `raw.githubusercontent`
+404s — both need auth the pod doesn't have. **Push updated files with `scp` from the local
+machine instead** (you already have SSH):
+```bash
+scp -P <PORT> src/eval_awareness_spectral/foo.py root@<HOST>:/workspace/eval-awareness-spectral/src/eval_awareness_spectral/
+scp -P <PORT> scripts/run_pod_scaling.py root@<HOST>:/workspace/eval-awareness-spectral/scripts/
+ssh $POD 'cd /workspace/eval-awareness-spectral && python -c "import ast; ast.parse(open(\"scripts/run_pod_scaling.py\").read()); print(\"SYNTAX OK\")"'
+```
+scp bypasses GitHub entirely and always works over the existing SSH channel.
+
+## The network-volume quota (the real disk limit) — and how to grow it
+
+Two different disks: **container disk** (`/`, ~30 GB, holds pip packages + `/tmp`, resets on
+pod edit) and the **network volume** (`/workspace`, a *provisioned quota* you pay for). `df`
+shows the underlying cluster (100s of TB) but writes fail with **`Disk quota exceeded (os error
+122)`** at the provisioned quota. That is the limit that stops big model downloads.
+
+- To grow it: RunPod **"Manage network storage"** → increase the volume GB. Do **NOT** use
+  **"Edit Pod"** — that resets the *container* (you lose all pip installs) and does not change
+  the volume anyway. Growing the network volume may still restart the pod (container resets,
+  `/workspace` persists → results safe, but reinstall deps per step 2).
+- To avoid growing it: run one model at a time with **`--purge-weights`** (deletes each model's
+  weights after its features are extracted, so peak usage ≈ one model). On a ~30 GB volume this
+  safely covers **≤9B** models (a 14B ≈ 28 GB is too tight even alone). `run_pod_scaling.py`
+  is **resumable** (skips rungs whose `token_acts.pkl` exists) and aggregates over ALL present
+  rungs, so you can wipe model weights between stages without losing results.
+
+## Strategy: breadth over depth on a single mid GPU
+
+For scaling laws, prefer **many families ≤14B** over one family to 72B: multiple within-family
+ladders (Qwen2.5 0.5–14B, SmolLM2 0.13–1.7B, Phi, Gemma-2, Llama-3.x) kill the "family artifact"
+objection and enrich the cross-architecture transfer matrix. `run_pod_scaling.py`'s `LADDER`
+holds them; **open** families (Qwen/SmolLM2/Phi/Mistral) need no token, **gated** ones
+(Gemma/Llama) auto-skip unless `HF_TOKEN` is exported and the licenses are accepted.
+
 ## Environment facts learned (RunPod PyTorch A100 pod)
 - Base image ships CUDA **torch** but **not** transformers/datasets/scikit-learn/matplotlib/seaborn/accelerate.
 - Python is PEP 668 externally-managed → every `pip install` needs `--break-system-packages`.
