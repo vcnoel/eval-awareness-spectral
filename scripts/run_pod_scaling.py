@@ -75,7 +75,10 @@ LADDER = [
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--tasks", type=int, default=15)
+    ap.add_argument("--tasks", type=int, default=1000,
+                    help="use only the first N tasks from --tasks-file (default: all in the file)")
+    ap.add_argument("--tasks-file", default=str(ROOT / "data" / "tasks.jsonl"),
+                    help="task pool jsonl; e.g. data/tasks_bench.jsonl for the 60-task ICLR pool")
     ap.add_argument("--max-b", type=float, default=9.0,
                     help="skip models larger than this (9 fits a ~30GB volume with --purge-weights)")
     ap.add_argument("--purge-weights", action="store_true",
@@ -86,8 +89,9 @@ def main():
     out = Path(args.out)
     subset = out / "_tasks.jsonl"
     subset.parent.mkdir(parents=True, exist_ok=True)
-    lines = [l for l in (ROOT / "data" / "tasks.jsonl").read_text(encoding="utf-8").splitlines() if l.strip()]
+    lines = [l for l in Path(args.tasks_file).read_text(encoding="utf-8").splitlines() if l.strip()]
     subset.write_text("\n".join(lines[: args.tasks]) + "\n", encoding="utf-8")
+    log.info("task pool: %s (%d of %d tasks used)", args.tasks_file, min(args.tasks, len(lines)), len(lines))
     conds = ["control", "deploy", "eval", "eval_subtle", "placebo"]
 
     import os
