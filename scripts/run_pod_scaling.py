@@ -60,6 +60,16 @@ LADDER = [
     ("llama-3.2-1b", "meta-llama/Llama-3.2-1B-Instruct", 1.0, 2048, "llama3", True),
     ("llama-3.2-3b", "meta-llama/Llama-3.2-3B-Instruct", 3.0, 3072, "llama3", True),
     ("llama-3.1-8b", "meta-llama/Llama-3.1-8B-Instruct", 8.0, 4096, "llama3", True),
+    # Gemma-4 within-family ladder (gated; omni text+image+audio, but text-only chat
+    # input runs through the standard causal-LM path in transformers>=5.14 —
+    # verified: "gemma4" is registered in MODEL_FOR_CAUSAL_LM_MAPPING_NAMES).
+    # Smallest first so an architecture/loading issue fails cheap, not after a 62GB dl.
+    # hidden_dim = the nested text_config.hidden_size (what our probes see).
+    ("gemma4-e2b",     "google/gemma-4-E2B-it",     2.0, 1536, "gemma4", True),
+    ("gemma4-e4b",     "google/gemma-4-E4B-it",     4.0, 2560, "gemma4", True),
+    ("gemma4-12b",     "google/gemma-4-12B-it",     12.0, 3840, "gemma4", True),
+    ("gemma4-26b-a4b", "google/gemma-4-26B-A4B-it", 26.0, 2816, "gemma4", True),
+    ("gemma4-31b",     "google/gemma-4-31B-it",     31.0, 5376, "gemma4", True),
 ]
 
 
