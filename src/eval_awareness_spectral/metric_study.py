@@ -83,18 +83,17 @@ def _auc_only(feats: pd.DataFrame, cond_a: str, cond_b: str) -> float:
 
 def per_metric_table(df, scope, norm, n_perm=1000) -> pd.DataFrame:
     rows = []
-    for metric, vel in ATOMS:
-        feats = _atom_features(df, [(metric, vel)], scope, norm)
+    for metric, form in ATOMS:
+        feats = _atom_features(df, [(metric, form)], scope, norm)
         pr = probe_matrix(feats, [c for c in feats.columns if c not in
                                   ("model", "task_id", "condition")],
-                          "eval", "deploy", label=_atom_name(metric, vel),
+                          "eval", "deploy", label=_atom_name(metric, form),
                           n_boot=1, n_perm=n_perm)
         ev = float(pr.auc.iloc[0]) if not pr.empty else np.nan
         pp = float(pr.perm_p.iloc[0]) if not pr.empty else np.nan
         neg = _auc_only(feats, "deploy", "placebo")
         evp = _auc_only(feats, "eval", "placebo")
-        rows.append({"atom": _atom_name(metric, vel), "metric": metric,
-                     "form": "vel" if vel else "static",
+        rows.append({"atom": _atom_name(metric, form), "metric": metric, "form": form,
                      "eval_v_deploy": ev, "eval_v_placebo": evp,
                      "neg_ctrl": neg, "selectivity_S": ev - neg if np.isfinite(ev + neg) else np.nan,
                      "perm_p": pp})
@@ -123,7 +122,7 @@ def per_layer_map(df, scope, norm) -> pd.DataFrame:
 def combination_study(df, scope, norm, n_perm=1000) -> Tuple[pd.DataFrame, pd.DataFrame]:
     """Pairwise combos + greedy forward selection by selectivity S."""
     # pairwise (static atoms only, to keep it readable)
-    static_atoms = [(m, False) for m in PRIMARY_METRICS]
+    static_atoms = [(m, "static") for m in PRIMARY_METRICS]
     pair_rows = []
     for a, b in combinations(static_atoms, 2):
         feats = _atom_features(df, [a, b], scope, norm)
@@ -176,8 +175,12 @@ def run(results_model_dir, scope="task_subgraph", norm="rw", n_perm=1000) -> dic
     pairs.to_csv(d / "metric_study_pairs.csv", index=False)
     greedy.to_csv(d / "metric_study_greedy.csv", index=False)
 
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
     pd.set_option("display.width", 200)
-    print(f"\n===== PER-METRIC (task_subgraph/{norm}); S = eval-vs-deploy − neg-control =====")
+    print(f"\n===== PER-METRIC (task_subgraph/{norm}); S = eval-vs-deploy - neg-control =====")
     print(pm.round(3).to_string(index=False))
     print("\n===== PEAK LAYER per metric (eval-vs-deploy single-value AUC) =====")
     if not pl.empty:
