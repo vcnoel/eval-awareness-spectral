@@ -124,14 +124,14 @@ def mine_model(pkl_path: Path) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
-def run() -> pd.DataFrame:
+def run(models=None) -> pd.DataFrame:
     try:
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     except Exception:
         pass
     per_model = []
     profiles = {}
-    for d, name, pb, family in MODELS:
+    for d, name, pb, family in (models or MODELS):
         p = RESULTS / d / "token_acts.pkl"
         if not p.exists():
             continue

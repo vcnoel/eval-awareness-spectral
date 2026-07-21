@@ -69,14 +69,14 @@ def _auc(y, s):
     return float(roc_auc_score(y, s)) if len(np.unique(y)) == 2 else np.nan
 
 
-def run(cond_a="eval", cond_b="deploy") -> pd.DataFrame:
+def run(cond_a="eval", cond_b="deploy", models=None) -> pd.DataFrame:
     try:
         sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     except Exception:
         pass
     feats: Dict[str, pd.DataFrame] = {}
     cols = None
-    for d, name, dim in MODELS:
+    for d, name, dim in (models or MODELS):
         p = RESULTS / d / "diagnostics_long.csv"
         if not p.exists():
             continue
