@@ -65,15 +65,21 @@ def main():
     tasks_path = make_subset(args.tasks, out / "_tasks_subset.jsonl")
     conditions = ["control", "deploy", "eval", "eval_subtle", "placebo"]
 
+    # Under position-matching the preamble is mostly filler, so the FULL-scope graph
+    # is meaningless (and its huge, filler-heavy Laplacian is slow/degenerate). Use
+    # only the task_subgraph cell in that mode; keep both cells otherwise.
+    cells = ([("task_subgraph", "rw")] if args.position_match
+             else [("full", "rw"), ("task_subgraph", "rw")])
     rc = RunConfig(
         name=args.model, hf_id=args.hf_id, dtype="float32", device="cuda",
-        conditions=conditions, cells=[("full", "rw"), ("task_subgraph", "rw")],
+        conditions=conditions, cells=cells,
         directed=False,  # not needed for the probe comparison; keep smoke fast
         position_match=args.position_match,
         output_dir=str(out), tasks_path=tasks_path,
     )
     if args.position_match:
-        log.info("POSITION-MATCHED frames enabled (task starts at same token index)")
+        log.info("POSITION-MATCHED frames enabled (task starts at same token index); "
+                 "using task_subgraph cell only")
 
     long_csv = out / rc.name / "diagnostics_long.csv"
     npz_path = out / rc.name / "activations.npz"
