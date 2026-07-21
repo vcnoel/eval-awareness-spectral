@@ -39,11 +39,13 @@ import numpy as np
 import pandas as pd
 
 RESULTS = Path(__file__).resolve().parents[2] / "results"
-MODELS = [  # (dir, name, params_b)
-    ("decomp_validation/qwen2.5-0.5b-it", "qwen2.5-0.5b", 0.5),
-    ("decomp_validation/llama-3.2-1b-it", "llama-3.2-1b", 1.0),
-    ("decomp_validation/gemma-2-2b-it",   "gemma-2-2b",   2.0),
-    ("decomp_validation/llama-3.2-3b-it", "llama-3.2-3b", 3.0),
+MODELS = [  # (dir, name, params_b, family)
+    ("decomp_validation/qwen2.5-0.5b-it", "qwen2.5-0.5b", 0.5, "qwen"),
+    ("decomp_validation/qwen2.5-3b-it",   "qwen2.5-3b",   3.0, "qwen"),
+    ("decomp_validation/qwen2.5-7b-it",   "qwen2.5-7b",   7.0, "qwen"),
+    ("decomp_validation/llama-3.2-1b-it", "llama-3.2-1b", 1.0, "llama"),
+    ("decomp_validation/llama-3.2-3b-it", "llama-3.2-3b", 3.0, "llama"),
+    ("decomp_validation/gemma-2-2b-it",   "gemma-2-2b",   2.0, "gemma"),
 ]
 
 
@@ -129,7 +131,7 @@ def run() -> pd.DataFrame:
         pass
     per_model = []
     profiles = {}
-    for d, name, pb in MODELS:
+    for d, name, pb, family in MODELS:
         p = RESULTS / d / "token_acts.pkl"
         if not p.exists():
             continue
@@ -139,7 +141,8 @@ def run() -> pd.DataFrame:
         profiles[name] = prof
         band = prof[prof.rel_depth >= 0.5]  # late-layer band (signal lives late)
         summ = band.drop(columns=["layer", "rel_depth"]).mean(numeric_only=True).to_dict()
-        summ = {"model": name, "params_b": pb, **{k: round(v, 3) for k, v in summ.items()}}
+        summ = {"model": name, "family": family, "params_b": pb,
+                **{k: round(v, 3) for k, v in summ.items()}}
         per_model.append(summ)
 
     tab = pd.DataFrame(per_model)

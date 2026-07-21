@@ -60,7 +60,29 @@ linear/spectral probe separates eval from format only at ≳1–3B. It is not a 
 of the selectivity result — it is measured on the raw shift directions, independent of any
 probe.
 
-## Falsifiable predictions for the scale-up (H100)
+## WITHIN-FAMILY confirmation (F3 passed): Qwen 0.5→3→7B, bf16
+
+The decisive test — one architecture, size varied — so the trend is size, not family:
+
+| Qwen | params | C4 consistency ↑ | C10 rank ↓ | C1 anti-align (anchor-free) | C8 norm ratio |
+|---|---|---|---|---|---|
+| 0.5B | 0.5 | 0.454 | 2.61 | +0.002 | 0.80 |
+| 3B | 3.0 | 0.531 | 2.46 | −0.151 | 0.88 |
+| 7B | 7.0 | 0.550 | 2.36 | −0.258 | 1.04 |
+
+**All four signatures are monotone in size within a single architecture**, and it replicates in
+the Llama ladder (1B→3B: C4 0.545→0.654, C10 2.35→1.90). So the crystallization is a **genuine
+scale effect, not a family artifact** — F1–F3 pass at the scales tested. The cleanest, most
+artifact-free signal is the anchor-free anti-alignment C1_mismatch: **+0.002 → −0.151 → −0.258**
+(no eval/format structure at 0.5B → clear, strengthening anti-alignment by 7B).
+
+Adversarial note: C4 (raw cross-task consistency) begins to *plateau* at the top (0.53→0.55),
+while C10 (rank), C1_mismatch (anti-alignment), and C8 (magnitude) keep moving — the
+crystallization continues but is carried more by rank-collapse and anti-alignment than by raw
+consistency at ≥3B. bf16 weights; all diagnostics/measurements computed in fp32/fp64 (precision
+where it counts is preserved).
+
+## Falsifiable predictions for the scale-up (H100, true fp32)
 
 - **F1 (crystallization continues):** C4 ↑ and C10 ↓ monotonically through 7–8B; C4 → ~0.8+,
   C10 → ~1.3 (approaching a 1-D universal "being-evaluated" direction).
