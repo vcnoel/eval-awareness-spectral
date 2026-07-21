@@ -34,21 +34,39 @@ from eval_awareness_spectral import law_mining, spectral_transfer, decomposition
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
 log = logging.getLogger("pod")
 
-# (name, hf_id, params_b, hidden_dim) — Qwen2.5 within-family ladder, all open-weights
+# (name, hf_id, params_b, hidden_dim, family, gated). Multi-family, <=14B.
+# Open (gated=False) need no HF token; gated=True need HF_TOKEN + accepted license.
 LADDER = [
-    ("qwen2.5-0.5b", "Qwen/Qwen2.5-0.5B-Instruct", 0.5, 896),
-    ("qwen2.5-1.5b", "Qwen/Qwen2.5-1.5B-Instruct", 1.5, 1536),
-    ("qwen2.5-3b",   "Qwen/Qwen2.5-3B-Instruct",   3.0, 2048),
-    ("qwen2.5-7b",   "Qwen/Qwen2.5-7B-Instruct",   7.0, 3584),
-    ("qwen2.5-14b",  "Qwen/Qwen2.5-14B-Instruct",  14.0, 5120),
-    ("qwen2.5-32b",  "Qwen/Qwen2.5-32B-Instruct",  32.0, 5120),
+    # Qwen2.5 within-family ladder (open)
+    ("qwen2.5-0.5b", "Qwen/Qwen2.5-0.5B-Instruct", 0.5, 896,  "qwen2.5", False),
+    ("qwen2.5-1.5b", "Qwen/Qwen2.5-1.5B-Instruct", 1.5, 1536, "qwen2.5", False),
+    ("qwen2.5-3b",   "Qwen/Qwen2.5-3B-Instruct",   3.0, 2048, "qwen2.5", False),
+    ("qwen2.5-7b",   "Qwen/Qwen2.5-7B-Instruct",   7.0, 3584, "qwen2.5", False),
+    ("qwen2.5-14b",  "Qwen/Qwen2.5-14B-Instruct",  14.0, 5120, "qwen2.5", False),
+    # SmolLM2 within-family ladder (open)
+    ("smollm2-135m", "HuggingFaceTB/SmolLM2-135M-Instruct", 0.135, 576,  "smollm2", False),
+    ("smollm2-360m", "HuggingFaceTB/SmolLM2-360M-Instruct", 0.36, 960,   "smollm2", False),
+    ("smollm2-1.7b", "HuggingFaceTB/SmolLM2-1.7B-Instruct", 1.7, 2048,   "smollm2", False),
+    # Phi within-family (open, MIT)
+    ("phi3.5-mini",  "microsoft/Phi-3.5-mini-instruct", 3.8, 3072, "phi", False),
+    ("phi4-mini",    "microsoft/Phi-4-mini-instruct",   3.8, 3072, "phi", False),
+    ("phi4",         "microsoft/phi-4",                 14.7, 5120, "phi", False),
+    # architecture-diversity single points (open)
+    ("mistral-7b",   "mistralai/Mistral-7B-Instruct-v0.3", 7.0, 4096, "mistral", False),
+    # gated (need HF_TOKEN + license) — auto-skip if unavailable
+    ("gemma-2-2b",   "google/gemma-2-2b-it", 2.0, 2304, "gemma2", True),
+    ("gemma-2-9b",   "google/gemma-2-9b-it", 9.0, 3584, "gemma2", True),
+    ("llama-3.2-1b", "meta-llama/Llama-3.2-1B-Instruct", 1.0, 2048, "llama3", True),
+    ("llama-3.2-3b", "meta-llama/Llama-3.2-3B-Instruct", 3.0, 3072, "llama3", True),
+    ("llama-3.1-8b", "meta-llama/Llama-3.1-8B-Instruct", 8.0, 4096, "llama3", True),
 ]
 
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--tasks", type=int, default=15)
-    ap.add_argument("--max-b", type=float, default=32.0, help="skip models larger than this")
+    ap.add_argument("--max-b", type=float, default=9.0,
+                    help="skip models larger than this (9 fits a ~30GB volume with --purge-weights)")
     ap.add_argument("--purge-weights", action="store_true",
                     help="delete each model's weights after extraction (small volume disk)")
     ap.add_argument("--out", default=str(ROOT / "results" / "pod_scaling"))
@@ -61,12 +79,19 @@ def main():
     subset.write_text("\n".join(lines[: args.tasks]) + "\n", encoding="utf-8")
     conds = ["control", "deploy", "eval", "eval_subtle", "placebo"]
 
+    import os
+    has_token = bool(os.environ.get("HF_TOKEN") or os.environ.get("HUGGING_FACE_HUB_TOKEN"))
+    hf_cache = Path(os.environ.get("HF_HOME", str(Path.home() / ".cache/huggingface"))) / "hub"
+
     ladder = [m for m in LADDER if m[2] <= args.max_b]
-    for name, hf_id, pb, dim in ladder:
+    for name, hf_id, pb, dim, family, gated in ladder:
         if (out / name / "token_acts.pkl").exists():
             log.info("========== %s already done, skipping ==========", name)
             continue
-        log.info("========== %s (%.1fB, bf16) ==========", name, pb)
+        if gated and not has_token:
+            log.info("========== %s gated, no HF_TOKEN — skipping ==========", name)
+            continue
+        log.info("========== %s (%s, %.2fB, bf16) ==========", name, family, pb)
         try:
             rc = RunConfig(name=name, hf_id=hf_id, dtype="bfloat16", device="cuda",
                            conditions=conds, cells=[("task_subgraph", "rw")], directed=False,
@@ -75,31 +100,32 @@ def main():
             run_model(rc)  # spectral diagnostics
             extract_activations(rc, out_npz=str(out / name / "activations.npz"),
                                 save_token_acts=True, token_acts_max_tasks=args.tasks)
-            if args.purge_weights:  # free the volume for the next (larger) model
-                import subprocess
-                subprocess.run(f"rm -rf $HF_HOME/hub/models--Qwen--Qwen2.5-{pb if pb!=0.5 else '0.5'}*",
-                               shell=True)
         except Exception as e:
             log.error("model %s FAILED (skipping): %s", name, e)
-        gc.collect()
-        if torch.cuda.is_available():
-            torch.cuda.empty_cache()
+        finally:
+            if args.purge_weights:  # free the volume before the next model
+                import shutil
+                shutil.rmtree(hf_cache / f"models--{hf_id.replace('/', '--')}", ignore_errors=True)
+            gc.collect()
+            if torch.cuda.is_available():
+                torch.cuda.empty_cache()
 
     # Aggregate over ALL rungs whose results exist (so a resumed run re-uses prior ones).
     rel = lambda name: f"pod_scaling/{name}"
-    present = [(n, pb, dim) for n, _, pb, dim in LADDER if (out / n / "token_acts.pkl").exists()]
+    present = [(n, pb, dim, fam) for n, _, pb, dim, fam, _ in LADDER
+               if (out / n / "token_acts.pkl").exists()]
     if not present:
         log.error("no models completed"); return
-    log.info("aggregating rungs: %s", [n for n, _, _ in present])
-    law_models = [(rel(n), n, pb, "qwen") for n, pb, _ in present]
-    transfer_models = [(rel(n), n, dim) for n, _, dim in present]
+    log.info("aggregating rungs: %s", [n for n, _, _, _ in present])
+    law_models = [(rel(n), n, pb, fam) for n, pb, _, fam in present]
+    transfer_models = [(rel(n), n, dim) for n, _, dim, _ in present]
 
-    print("\n\n##################  CRYSTALLIZATION (Qwen within-family ladder)  ##################")
+    print("\n\n##################  CRYSTALLIZATION (per-family scaling)  ##################")
     law_mining.run(models=law_models)
     print("\n\n##################  CROSS-ARCHITECTURE SPECTRAL TRANSFER  ##################")
     spectral_transfer.run(models=transfer_models)
     print("\n\n##################  SELECTIVITY CROSSOVER per model  ##################")
-    for n, _, _ in present:
+    for n, _, _, _ in present:
         try:
             decomposition.run(str(out / n), n_perm=500)
         except Exception as e:
