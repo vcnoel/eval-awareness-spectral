@@ -167,7 +167,34 @@ scripts/run_pilot.py, scripts/audit_lengths.py
 
 Cached models available for the full sweep: `gemma-3-1b-it`, `gemma-2-2b-it`, `qwen2.5-3b-it`, `llama-3.2-3b-it`, `gemma-4-E2B-it`.
 
-_(gemma-2-2b-it 6-task pilot was a plumbing smoke test and is superseded by the run above.)_
+### Confound hardening — Clever Hans hunt (Llama-3.2-3B)
+
+The eval-vs-deploy AUC above is *partly* a shortcut. Two confounds, found and addressed:
+
+1. **Absolute token position (RoPE).** Each frame has a fixed-length preamble, so the (byte-identical) task tokens sit at a condition-specific absolute position — and a 1-feature probe on task-start index gets AUC **1.0**. A raw-activation probe reads it too. Fix: **position-matched frames** (`--position-match`) pad each preamble with neutral function-word filler so the task starts at the *same* token index in every frame (verified spread = 0). After this, `position_only` → 0.5.
+2. **Filler amount.** Padding shorter preambles more re-introduces a "how much filler precedes me" correlate. High-capacity activation probes (`act_full`, `act_pca`) **still hit 1.0 on the negative control** — the Clever Hans switches shortcuts rather than dying.
+
+**Consequence for the design:** raw AUC is not a valid headline. The confound-robust metric is **selectivity** `S = AUC(eval-vs-deploy) − AUC(deploy-vs-placebo)` (the negative control subtracts shared wording/filler/position). Spectral features are the *most selective* because their invariances don't soak up those nuisances.
+
+### Per-metric information & complementarity (`metric_study.py`, position-matched, 15 tasks)
+
+Decomposing by `(metric × form)` where form ∈ {static, velocity, acceleration}:
+
+- **Only `smoothness_index` (static) is genuinely selective:** eval-vs-deploy 0.71, negative-control 0.60, **S = 0.10, permutation p = 0.02**.
+- **`spectral_entropy` and `gini_sparsity` have high raw AUC (0.72–0.73) but *equally high* negative-control** → S ≈ 0 → they mostly read the confound, not evaluativeness. Lumping them into one probe *diluted* the signal (this is why the combined probe looked weak).
+- **Velocity/acceleration forms were worse** (negative S) on this contrast — the depth-derivatives amplify the (cross-layer-structured) filler confound. Static wins here.
+- **They complement:** `smoothness + hfer` → **S = 0.16**; greedy forward-selection by S → `smoothness[static] + hfer[accel] + hfer[static]` → **S = 0.17**, negative-control 0.55 (lowest leakage). Curating nearly doubles selectivity vs the best single metric.
+- **Signal localizes late:** `smoothness_index` peaks at **layer 21** (single-value AUC 0.84).
+
+**Honest bottom line:** the evaluativeness signal *survives* position-matching in `smoothness_index (+ hfer)`, significantly (p=0.02) — it is **not** pure Clever Hans — but once position + wording + filler are stripped it is **modest** (S ≈ 0.17 at N=15) and carried by one metric, not the whole suite.
+
+### Causal steering (`causal.py`)
+
+Difference-of-means eval-direction (optionally rank-k SVD-denoised, à la spectral-steering), **norm-relative** dose-response (α as a fraction of the residual norm), a **fluency guard** (`degenerate`, dropped from the means), a **narrow layer band** around the late-layer signal peak (steering many layers at once compounds and destroys fluency), and **placebo / random direction** specificity controls, on held-out tasks.
+
+Calibration mattered: raw large-α and wide-band steering *uniformly broke* generation. At layers [18,19,20], α∈{0,.05,.1,.2}, generation stays fluent (108/128) — but the **result is a null**: across every α, all three directions (eval / placebo / random) fluctuate around baseline (hedging ≈0.38, refusal ≈0.12, meta-eval ≈0) with no monotonic dose-response and **no eval-specific effect vs the controls**. Interpretation: the harness is sound, but at this scale (8 held-out tasks) with keyword-based behavioral proxies there is no demonstrated causal effect. Getting a real signal needs a sensitive behavioral metric (sandbagging accuracy on gold-labeled items, or an LLM judge) and more tasks — this is the clearest remaining gap.
+
+_(gemma-2-2b-it 6-task pilot was a plumbing smoke test and is superseded by the runs above.)_
 
 ## License
 

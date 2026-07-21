@@ -58,6 +58,8 @@ def main():
     ap.add_argument("--skip-causal", action="store_true")
     ap.add_argument("--skip-battery", action="store_true",
                     help="skip the (slow) baseline battery; run spectral+activations(+causal) only")
+    ap.add_argument("--causal-rank", type=int, default=0,
+                    help="rank-k SVD denoising of the steering direction (0 = raw diff-of-means)")
     ap.add_argument("--position-match", action="store_true",
                     help="pad preambles so the task starts at the same token index in every frame")
     ap.add_argument("--fresh", action="store_true", help="recompute steps 1-2 even if cached")
@@ -133,8 +135,9 @@ def main():
 
     # ---- 4. causal ----
     if not args.skip_causal:
-        log.info("STEP 4/4 causal steering")
-        cdf = run_causal(rc, npz, out, alphas=(0.0, 4.0, 8.0))
+        log.info("STEP 4/4 causal steering (norm-relative dose-response)")
+        cdf = run_causal(rc, npz, out, alphas=(0.0, 0.05, 0.1, 0.2, 0.4),
+                         rank=args.causal_rank)
         summ_path = out / "causal_summary.csv"
         if summ_path.exists():
             print("\n=== CAUSAL: behavioral readouts by direction x alpha (deploy prompts) ===")
