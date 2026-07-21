@@ -67,6 +67,30 @@ This is falsifiable: if the confound is *not* DC-dominated, DC probes would be s
 Companion (optional second claim): the relational (AC / spectral) selectivity **scales** with model
 size (the field's power-law), tested on the within-family ladders in `configs/models_scaling.json`.
 
+## Validation status (small-scale, N=15 tasks, position-matched) — HONEST
+
+The crossover prediction is **confirmed clearly in one model and not yet replicated**:
+
+| model | S(DC) | S(AC) | S(spectral) | spectral eval p |
+|---|---|---|---|---|
+| Qwen2.5-0.5B | +0.03 | −0.04 | +0.02 | 0.42 (no eval signal at all) |
+| Llama-3.2-1B | **−0.16** | −0.13 | **+0.09** | 0.26 (weak, right direction) |
+| Gemma-2-2B | 0.00 | −0.02 | **−0.10** | 0.17 (counterexample: spectral anti-selective) |
+| **Llama-3.2-3B** | −0.07 | +0.13 | **+0.15** | **0.007** ✓ clean P1–P3 |
+
+Theorem 1 is unconditional (math); what is **not yet established** is the empirical premise
+(confound = DC, evaluativeness = AC) beyond Llama-3.2-3B. Small models (0.5–2B) show no
+significant eval signal at N=15 (consistent with the eval-awareness power-law), so there is
+nothing to decompose; only the 3B model clears significance. **The claim currently rests on a
+single model** and must be established at scale.
+
+**Falsifiable targets for the scale-up (H100):** (T1) the crossover holds at ≥7B with N≥60 tasks,
+p<0.05 per model; (T2) selectivity S(spectral) increases monotonically with model size (below-
+threshold → clear), tying the small-model nulls to the power-law rather than to failure; (T3)
+Gemma is not a systematic counterexample (check Gemma-2-9B). If T1–T3 fail, the honest paper is the
+*negative/methodological* one: "probe-based eval-awareness is DC-format-confounded; the relational
+signal is weak and scale-gated."
+
 ## Measurables (see `decomposition.py`)
 
 - DC/AC **shift magnitudes**: `‖DC(Δ)‖`, `‖AC(Δ)‖` for eval-vs-deploy and for the negative control.
