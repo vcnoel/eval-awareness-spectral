@@ -33,12 +33,46 @@ By contrast, a **mean-pooled activation probe** uses `mean_tok(X) = DC` (up to t
 so it is a function of *only* the DC component — the exact complement of what the spectral
 metrics see.
 
-## The confound model and the falsifiable prediction
+## Theorem 2 (spectral complementarity & frequency-graded suppression) — the real one
 
-Model the frame's causal effect on the fixed task tokens, `Δ = X_eval − X_deploy`, as
-`Δ = b · 1_n uᵀ + R`, a **token-uniform bias** `b·1uᵀ` (all task tokens shift alike because they
-all attend to the *same* surrounding frame — a "format/context DC bias") plus a **relational
-residual** `R` with `mean_tok(R) ≈ 0`.
+Theorem 1 is the `k=0` corner of a stronger statement. Let `L = Φ Λ Φᵀ` with eigenpairs
+`(λ_k, φ_k)`, `0 = λ_0 ≤ λ_1 ≤ …`, and graph-Fourier transform `X̂ = Φᵀ X` (rows `x̂_k ∈ ℝ^d`).
+
+**(i) Mean-pool is the DC read-out.** For the combinatorial `L`, `φ_0 ∝ 1`, so the mean-pool
+statistic `m(X) = (1/n)1ᵀX ∝ x̂_0`. A linear probe on `m(X)` reads *only* the DC mode `x̂_0`.
+
+**(ii) Dirichlet energy is DC-annihilating and frequency-graded.**
+`E(X) = tr(XᵀLX) = Σ_k λ_k ‖x̂_k‖²`. Thus `∂E/∂x̂_0 = 0`, and a perturbation `Δ` whose graph-spectral
+support lies in `{k : λ_k ≤ ε}` moves the energy by at most `|E(X+Δ)−E(X)| ≤ 2ε‖X‖‖Δ‖ + ε‖Δ‖²` —
+**suppressed in proportion to its graph frequency**, not merely at DC.
+
+**(iii) Complementarity.** Mean-pool (ideal low-pass at DC) and Dirichlet energy (the quadratic
+high-pass `Σ λ_k`) are *orthogonal spectral filters*: every signal component is registered by at
+most one, graded by frequency. A mean-pooled probe is maximally sensitive to exactly the low
+frequencies the energy metric suppresses.
+
+*Proof.* (i) `φ_0 ∝ 1` because `L1=0`; `Φ` orthonormal ⇒ `x̂_0 = φ_0ᵀX ∝ 1ᵀX`. (ii) `XᵀLX =
+XᵀΦΛΦᵀX = X̂ᵀΛX̂ = Σ_k λ_k x̂_k x̂_kᵀ`; take the trace. The bound is Cauchy–Schwarz on
+`E(X+Δ)−E(X) = 2⟨X,LΔ⟩ + ⟨Δ,LΔ⟩` with `‖L|_{span φ_{k≤K}}‖ ≤ ε`. ∎
+
+### The confound model and the falsifiable prediction (from Theorem 2)
+
+**Sharp prediction (frequency separation).** A frame is a *global, slowly-varying* contextual
+influence on the task tokens, so its effect should concentrate at **low graph frequency** (small
+`λ`). Decompose the shift `Δ = X_a − X_b` in the (common, deploy-graph) Fourier basis and define its
+**graph-spectral centroid** `c(Δ) = Σ_k λ_k ‖Δ̂_k‖² / Σ_k ‖Δ̂_k‖²` (mean graph frequency of the
+shift) and its **DC mass fraction** `f_DC = ‖Δ̂_0‖² / Σ_k ‖Δ̂_k‖²`. If the *format/wording* confound
+is graph-smoother than genuine *evaluativeness* (which reshapes token-relational structure), then:
+
+> **(P4)** `c(eval·deploy) > c(deploy·placebo)` and `f_DC(eval·deploy) < f_DC(deploy·placebo)`:
+> the evaluativeness shift is *higher graph-frequency* than the pure-confound shift.
+
+P4 is a single-number, falsifiable consequence of Theorem 2 that does **not** reduce to the DC
+special case — it predicts a *graded* spectrum, and can fail (if evaluativeness is also low-frequency,
+`c` would be equal and the account is wrong). The DC/AC crossover (below) is the coarse `f_DC` version.
+
+The coarse form: model the shift as `Δ = b · 1_n uᵀ + R`, a **token-uniform bias** `b·1uᵀ` (the
+low-frequency format/context component) plus a **relational residual** `R` (`mean_tok(R) ≈ 0`).
 
 - A mean-pooled / DC probe reads `b` (the uniform bias) and is blind to `R`.
 - A Dirichlet-energy / AC / spectral probe reads `R` and is blind to `b` (Theorem 1).
