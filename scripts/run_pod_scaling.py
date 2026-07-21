@@ -43,6 +43,7 @@ LADDER = [
     ("qwen2.5-3b",   "Qwen/Qwen2.5-3B-Instruct",   3.0, 2048, "qwen2.5", False),
     ("qwen2.5-7b",   "Qwen/Qwen2.5-7B-Instruct",   7.0, 3584, "qwen2.5", False),
     ("qwen2.5-14b",  "Qwen/Qwen2.5-14B-Instruct",  14.0, 5120, "qwen2.5", False),
+    ("qwen2.5-32b",  "Qwen/Qwen2.5-32B-Instruct",  32.0, 5120, "qwen2.5", False),
     # SmolLM2 within-family ladder (open)
     ("smollm2-135m", "HuggingFaceTB/SmolLM2-135M-Instruct", 0.135, 576,  "smollm2", False),
     ("smollm2-360m", "HuggingFaceTB/SmolLM2-360M-Instruct", 0.36, 960,   "smollm2", False),
