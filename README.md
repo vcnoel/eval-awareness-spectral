@@ -194,6 +194,28 @@ Difference-of-means eval-direction (optionally rank-k SVD-denoised, à la spectr
 
 Calibration mattered: raw large-α and wide-band steering *uniformly broke* generation. At layers [18,19,20], α∈{0,.05,.1,.2}, generation stays fluent (108/128) — but the **result is a null**: across every α, all three directions (eval / placebo / random) fluctuate around baseline (hedging ≈0.38, refusal ≈0.12, meta-eval ≈0) with no monotonic dose-response and **no eval-specific effect vs the controls**. Interpretation: the harness is sound, but at this scale (8 held-out tasks) with keyword-based behavioral proxies there is no demonstrated causal effect. Getting a real signal needs a sensitive behavioral metric (sandbagging accuracy on gold-labeled items, or an LLM judge) and more tasks — this is the clearest remaining gap.
 
+### Baselines from the literature (`sandbagging.py`)
+
+To match/beat the eval-awareness field we include its standard baselines on the same
+benchmarks (GSM8K / ARC / MMLU, frame-wrapped):
+
+- **Verbalized / black-box** — ask the model directly "eval or deployment?". On Llama-3.2-3B
+  this scores **AUC 1.00** on the explicit frames: the model can *verbally* classify them
+  perfectly. **This sharpens the contribution**: detecting *explicit* eval-awareness is trivial
+  (black-box already saturates), so the white-box spectral probe's value is **not** raw detection
+  — it is (a) **selectivity** (isolating evaluativeness from format, which black-box cannot),
+  (b) the **subtle/implicit-cue** regime the model can't verbalize, and (c) **interpretability**.
+- **Behavioral sandbagging** — accuracy on the *same* gold-labeled items under eval vs deploy
+  framing. `sandbagging = acc(deploy) − acc(eval)`; a signed, gold-grounded behavioral effect
+  (and the target for the causal steering test). Consistent with the field, we expect this to be
+  small at scale.
+- **Linear activation probe** (`baselines.py`) — the standard white-box baseline; confound-tested
+  via the selectivity metric.
+
+**Scaling:** `configs/models_scaling.json` gives within-family size ladders (Qwen2.5 0.5→3→7B,
+Llama-3.2 1→3→8B, Gemma 1→2B) sized for a 16 GB GPU, to test the power-law (larger ⇒ stronger
+detection) the field reports.
+
 _(gemma-2-2b-it 6-task pilot was a plumbing smoke test and is superseded by the runs above.)_
 
 ## License

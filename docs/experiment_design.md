@@ -1,5 +1,37 @@
 # Experimental design: eval-awareness spectral fingerprint (ICLR-track target)
 
+## Positioning against the eval-awareness literature
+
+The field has converged on findings we can build on and, in places, beat:
+
+- **Eval-vs-deploy is linearly decodable from residual-stream activations (~0.83 AUC)** and
+  detection **scales with model size** (power law) — SAD (Laine et al.), *Evaluation Awareness
+  Scales Predictably* (arXiv 2509.13333). → our **activation-probe baseline** + **scaling ladder**
+  (`configs/models_scaling.json`) replicate this.
+- **Probe evidence may be *format / structure sensitivity*, not genuine awareness** — *Is
+  Evaluation Awareness Just Format Sensitivity?* (arXiv 2603.19426), which uses a 2×2 controlled
+  design over MMLU/ARC/GSM8K. → **our core contribution goes further**: full **position-matching**
+  (task at identical token index) + a **selectivity metric** with a negative control, and we show
+  activation probes fail the negative control (format-confounded) while the **spectral** probe is
+  more selective and interpretable.
+- **Eval-awareness has limited behavioral effect** (arXiv 2605.05835) and **is not one capability**
+  (arXiv 2606.23583). → we **replicate** both (causal behavioral null with proper controls; subtle→
+  explicit non-transfer) — replication of the field's own findings strengthens credibility.
+
+**Standard baselines we include** (to match/beat the field): (1) **verbalized / black-box** — ask
+the model "eval or deployment?" (SAD *Stages Oversight*; `sandbagging.run_verbalized_baseline`);
+(2) **linear activation probe** per layer (`baselines.py`); (3) **behavioral sandbagging** on
+gold-labeled GSM8K/ARC/MMLU (`sandbagging.run_sandbagging`). Datasets = the same benchmarks the
+field uses, frame-wrapped byte-identically.
+
+**One-line thesis:** *eval-awareness is decodable but recent work shows probe evidence may be format
+sensitivity; we give a confound-robust, interpretable spectral-geometric probe that isolates genuine
+evaluativeness (position-matched + selectivity), quantify which spectral quantities carry it, and
+replicate the field's behavioral-null and no-transfer results.*
+
+---
+
+
 Adversarial design. Every experiment below is written to survive the specific
 reviewer objection stated next to it. The guiding strategic decision:
 
