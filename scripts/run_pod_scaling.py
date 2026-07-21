@@ -49,6 +49,8 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--tasks", type=int, default=15)
     ap.add_argument("--max-b", type=float, default=32.0, help="skip models larger than this")
+    ap.add_argument("--purge-weights", action="store_true",
+                    help="delete each model's weights after extraction (small volume disk)")
     ap.add_argument("--out", default=str(ROOT / "results" / "pod_scaling"))
     args = ap.parse_args()
 
@@ -60,8 +62,10 @@ def main():
     conds = ["control", "deploy", "eval", "eval_subtle", "placebo"]
 
     ladder = [m for m in LADDER if m[2] <= args.max_b]
-    done = []
     for name, hf_id, pb, dim in ladder:
+        if (out / name / "token_acts.pkl").exists():
+            log.info("========== %s already done, skipping ==========", name)
+            continue
         log.info("========== %s (%.1fB, bf16) ==========", name, pb)
         try:
             rc = RunConfig(name=name, hf_id=hf_id, dtype="bfloat16", device="cuda",
@@ -71,26 +75,31 @@ def main():
             run_model(rc)  # spectral diagnostics
             extract_activations(rc, out_npz=str(out / name / "activations.npz"),
                                 save_token_acts=True, token_acts_max_tasks=args.tasks)
-            done.append((name, hf_id, pb, dim))
+            if args.purge_weights:  # free the volume for the next (larger) model
+                import subprocess
+                subprocess.run(f"rm -rf $HF_HOME/hub/models--Qwen--Qwen2.5-{pb if pb!=0.5 else '0.5'}*",
+                               shell=True)
         except Exception as e:
             log.error("model %s FAILED (skipping): %s", name, e)
         gc.collect()
         if torch.cuda.is_available():
             torch.cuda.empty_cache()
 
-    if not done:
-        log.error("no models completed"); return
-
+    # Aggregate over ALL rungs whose results exist (so a resumed run re-uses prior ones).
     rel = lambda name: f"pod_scaling/{name}"
-    law_models = [(rel(n), n, pb, "qwen") for n, _, pb, _ in done]
-    transfer_models = [(rel(n), n, dim) for n, _, _, dim in done]
+    present = [(n, pb, dim) for n, _, pb, dim in LADDER if (out / n / "token_acts.pkl").exists()]
+    if not present:
+        log.error("no models completed"); return
+    log.info("aggregating rungs: %s", [n for n, _, _ in present])
+    law_models = [(rel(n), n, pb, "qwen") for n, pb, _ in present]
+    transfer_models = [(rel(n), n, dim) for n, _, dim in present]
 
     print("\n\n##################  CRYSTALLIZATION (Qwen within-family ladder)  ##################")
     law_mining.run(models=law_models)
     print("\n\n##################  CROSS-ARCHITECTURE SPECTRAL TRANSFER  ##################")
     spectral_transfer.run(models=transfer_models)
     print("\n\n##################  SELECTIVITY CROSSOVER per model  ##################")
-    for n, _, _, _ in done:
+    for n, _, _ in present:
         try:
             decomposition.run(str(out / n), n_perm=500)
         except Exception as e:
