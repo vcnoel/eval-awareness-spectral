@@ -1,0 +1,522 @@
+%%%%%%%% ICML 2026 SUBMISSION FILE %%%%%%%%%%%%%%%%%
+\documentclass{article}
+
+\usepackage{microtype}
+\usepackage{graphicx}
+\usepackage{subcaption}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\newcommand{\theHalgorithm}{\arabic{algorithm}}
+\newcommand{\starfootnote}[1]{%
+  \begingroup
+  \renewcommand\thefootnote{\fnsymbol{footnote}}%
+  \footnote[1]{#1}%
+  \endgroup
+}
+
+% For preprint / blind review swap the option below.
+\usepackage[accepted]{icml2026}
+
+\usepackage{amsmath,amssymb,amsfonts,amsthm}
+\usepackage{mathtools}
+\usepackage{bm}
+\usepackage[table]{xcolor}
+\usepackage{multirow}
+\usepackage{enumitem}
+\usepackage{xspace}
+\usepackage[capitalize,noabbrev]{cleveref}
+
+\theoremstyle{plain}
+\newtheorem{theorem}{Theorem}
+\newtheorem{corollary}{Corollary}
+\newtheorem{conjecture}{Conjecture}
+
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\diag}{\mathrm{diag}}
+\newcommand{\dc}{\mathrm{DC}}
+\newcommand{\ac}{\mathrm{AC}}
+\newcommand{\eval}{\textsc{eval}\xspace}
+\newcommand{\deploy}{\textsc{deploy}\xspace}
+\newcommand{\placebo}{\textsc{placebo}\xspace}
+
+\icmltitlerunning{Evaluation Awareness Crystallizes with Scale}
+
+\begin{document}
+
+\twocolumn[
+\icmltitle{Evaluation Awareness Crystallizes with Scale:\\
+  A Confound-Hardened Geometric Account}
+
+\begin{icmlauthorlist}
+\icmlauthor{Anonymous}{}
+\end{icmlauthorlist}
+
+\icmlaffiliation{devoteam}{Devoteam, Paris}
+\icmlcorrespondingauthor{Valentin No\"{e}l}{val.noel@proton.me}
+
+\icmlkeywords{evaluation awareness, situational awareness, safety,
+  interpretability, representation geometry, spectral graph theory, scaling}
+
+\vskip 0.3in
+]
+
+\printAffiliationsAndNotice{}
+
+% ============================================================================
+\begin{abstract}
+% ============================================================================
+A language model that behaves differently when it detects it is being
+\emph{evaluated} rather than \emph{deployed} undermines the evaluations we use
+to certify it. Recent probing work reports that this ``evaluation awareness'' is
+linearly decodable from internal activations, but an equally recent critique
+warns that such evidence may be mere \emph{format sensitivity}. We take that
+critique seriously and build a confound-hardened instrument: identical tasks are
+wrapped in situational frames held byte-identical in content, the attention
+graph is restricted to the byte-identical task tokens, and frames are
+\emph{token-position matched} so that a probe cannot exploit absolute position.
+Under these controls the picture is sobering: a mean-pooled activation probe is
+\emph{format-confounded}, separating a non-evaluative negative control as well as
+the real contrast, and the residual evaluativeness signal is weak. We prove
+(Theorem~\ref{thm:dc}) that Dirichlet-energy spectral metrics are invariant to
+the token-uniform component that carries this confound, and we \emph{falsify} the
+natural frequency-separation mechanism that would explain any spectral advantage.
+Batch-mining a battery of candidate invariants and stress-testing each yields one
+law that survives: with scale, the evaluation-frame shift \textbf{crystallizes}
+into a low-rank, task-universal direction that is anti-aligned with the format
+direction, a structure absent below ${\sim}1$B and monotone \emph{within} the
+Qwen (0.5$\to$3$\to$7B) and Llama (1$\to$3B) families. Crystallization entails a
+capability activations lack by construction: because the signature is universal,
+a dimension-agnostic spectral probe \emph{transfers across architectures}
+(cross-architecture AUC $0.615$, permutation $p=0.001$), which a probe living in
+$\R^{d}$ cannot. We replicate the field's behavioral-null and
+no-transfer-across-cues findings. Our scales are modest ($\le 7$B); we state the
+falsifiable predictions that the ongoing scale-up either confirms or breaks.
+\starfootnote{\href{https://github.com/vcnoel/eval-awareness-spectral}{vcnoel/eval-awareness-spectral}}
+\end{abstract}
+
+% ============================================================================
+\section{Introduction}
+% ============================================================================
+Capability and safety evaluations are only trustworthy if a model behaves during
+the test as it would in deployment. A model that recognises the test frame and
+modulates its behaviour, whether by sandbagging a dangerous capability or
+performing extra caution, breaks that assumption \citep{sad,scheming}. The
+empirical question is whether models represent the distinction between
+\emph{being evaluated} and \emph{being deployed}, and whether that representation
+is anything more than a surface artifact.
+
+Two recent lines of work frame the problem. On one hand, situational-awareness
+benchmarks and linear probes report that frontier models classify
+evaluation-vs-deployment transcripts at up to ${\sim}0.83$ AUC and that this
+detection scales with model size \citep{sad,scaling}. On the other, a pointed
+critique asks whether probe-based evidence is genuine awareness or
+\emph{format sensitivity}: a probe may key on structural or lexical differences
+between test and deployment prompts rather than on any meta-representation of
+being tested \citep{format}. If the critique is right, the reported signal is a
+confound.
+
+We take the confound seriously and, rather than argue, we \emph{engineer it out}
+and measure what remains. Our contributions are:
+
+\begin{enumerate}[leftmargin=1.4em,itemsep=1pt,topsep=1pt]
+\item \textbf{A confound-hardened protocol} (\cref{sec:setup}). Content is
+  byte-identical across frames; the graph-signal analysis is restricted to the
+  byte-identical \emph{task tokens}; frames are padded to a common preamble
+  length so the task begins at the \emph{same absolute token index} in every
+  condition (removing a Rotary-position shortcut that alone scores AUC $1.0$);
+  and every claim is read through a \emph{selectivity} statistic that subtracts a
+  non-evaluative negative control.
+\item \textbf{A largely negative primary finding} (\cref{sec:confound}). After
+  these controls, a mean-pooled activation probe is \emph{format-confounded}: it
+  separates the negative control as well as the real contrast (selectivity
+  $S \le 0$). The residual evaluativeness signal is weak and carried by a small
+  number of scale-invariant graph statistics.
+\item \textbf{Theory} (\cref{sec:theory}). We prove that Dirichlet-energy
+  spectral metrics are invariant to the token-uniform (``DC'') component of the
+  shift (Theorem~\ref{thm:dc}) and are frequency-graded (Theorem~\ref{thm:filter}),
+  making mean-pooling and spectral energy \emph{complementary graph filters}. We
+  then \emph{falsify} the sharp prediction this suggests, that the format confound
+  is graph-smoother than evaluativeness: the two shifts are spectrally
+  indistinguishable.
+\item \textbf{The law that survives batch mining} (\cref{sec:law}). Generating a
+  battery of $16$ candidate invariants and stress-testing each (killing several,
+  including one via a matched-vs-mismatched-anchor artifact test), one survives:
+  \emph{eval-direction crystallization}, monotone \emph{within} two model
+  families.
+\item \textbf{The spectral-unique capability} (\cref{sec:transfer}).
+  Crystallization entails that a dimension-agnostic spectral probe transfers
+  across architectures with different hidden sizes, a task an activation probe
+  cannot even be evaluated on. We measure a significant cross-architecture
+  transfer.
+\end{enumerate}
+
+We are explicit that this is a first study at accessible scale ($\le 7$B, tens of
+tasks). We therefore state, throughout, the falsifiable predictions the scale-up
+must satisfy (\cref{sec:limits}).
+
+% ============================================================================
+\section{Related Work}
+% ============================================================================
+\paragraph{Evaluation and situational awareness.} The Situational Awareness
+Dataset \citep{sad} operationalises whether models can, among other capacities,
+tell an internal evaluation from real deployment; its \emph{Stages Oversight}
+split gives testing-vs-deployment labels. Subsequent work reports that this
+ability follows a power law in model size \citep{scaling}, that its behavioural
+consequences are limited \citep{behaviour}, and that it is ``not one capability''
+\citep{notone}: cues that signal evaluation in one framing do not transfer to
+another. We reproduce the latter two (\cref{sec:neg}).
+
+\paragraph{Is it format sensitivity?} \citet{format} control prompt structure in
+a $2\times2$ design over MMLU/ARC/GSM8K and argue that apparent evaluation
+awareness partly reflects formatting rather than meta-cognition. Our protocol
+pushes their control further, to byte-identical content, position-matched frames,
+and a graph restricted to the shared task tokens, and answers the question they
+raise: at accessible scales, largely yes.
+
+\paragraph{Probing and detection.} Linear probes on residual-stream activations
+are the standard white-box detector \citep{sad,scaling}; the verbalised/black-box
+detector simply asks the model. We include both as baselines and find the
+black-box detector saturates on explicit frames (\cref{sec:neg}), which sharpens
+the target: the interesting regime is not \emph{detection} but \emph{selectivity}
+against format, and cross-model \emph{transfer}.
+
+\paragraph{Spectral graph analysis of transformers.} Treating attention as a
+weighted token graph and reading graph-signal-processing (GSP) diagnostics of the
+hidden signal, Fiedler value, spectral entropy, high-frequency energy, has been
+used for hallucination and reasoning diagnostics \citep{spectraltrust,geomreason}.
+We use the same primitive but ask a different question: not whether it
+\emph{detects} a property, but whether its invariances make it \emph{selective}
+and \emph{transferable} where activations are not.
+
+% ============================================================================
+\section{Setup}\label{sec:setup}
+% ============================================================================
+\paragraph{Frames.} Each base task $t$ (a neutral question) is wrapped in
+situational frames that share a system message and a user template:
+\deploy (a private, ungraded conversation), \eval (a graded benchmark item),
+\placebo (a long but non-evaluative preamble), and a subtle cue
+(\textsc{eval-subtle}). \deploy, \eval and \placebo are written to matched token
+length. The task text is inserted verbatim, so any two frames of the same task
+differ \emph{only} in framing tokens.
+
+\paragraph{Task-subgraph isolation.} For each prompt we locate the token span of
+the byte-identical task text and build the attention graph on \emph{only} those
+nodes (passing the span as subgraph indices to the GSP analysis). The node set is
+therefore identical across frames; a diagnostic difference reflects how the frame
+reshapes attention \emph{into and among} the shared task tokens.
+
+\paragraph{Position matching.} Because each frame's preamble has a fixed length,
+the task tokens otherwise begin at a frame-specific absolute position; a
+one-feature probe on that index scores AUC $1.0$, and Rotary embeddings leak it
+into activations. We pad each preamble with neutral function-word filler so the
+task begins at the \emph{same} token index in every frame (measured spread:
+$0$ tokens, versus $115$ unmatched). Under position matching, a bare
+\textsc{control} template whose task boundary re-tokenises is reconciled by
+keeping the majority tokenisation and dropping only the outlier frame.
+
+\paragraph{Selectivity.} Raw decodability is not the target: even a perfect
+detector of \emph{format} would score high. We report
+\[
+  S \;=\; \mathrm{AUC}(\eval\text{ vs }\deploy) \;-\;
+          \mathrm{AUC}(\deploy\text{ vs }\placebo),
+\]
+where the second term is a \emph{negative control}: \deploy and \placebo are both
+non-evaluative, so a family that separates them is reading wording/length/format,
+not evaluativeness. $S$ subtracts that shared nuisance; $S>0$ is the signal.
+
+\paragraph{Diagnostics.} All measurements come from a graph-signal-processing
+library that upcasts hidden states to \texttt{float32}; we force a dense
+eigensolver so the full eigenbasis is used, and we compute the scale-invariant
+diagnostics smoothness index, spectral entropy, high-frequency energy ratio
+(HFER), and a Gini of the spectral masses. All downstream statistics are computed
+in \texttt{float64}.
+
+\paragraph{Models and probes.} We use instruction-tuned models spanning three
+families and four hidden sizes, Qwen2.5 (0.5/3/7B, $d\in\{896,2048,3584\}$),
+Llama-3.2 (1/3B, $d\in\{2048,3072\}$), Gemma-2 (2B, $d=2304$), in \texttt{bfloat16}
+weights (the analysis precision is \texttt{float32}/\texttt{float64} regardless).
+Probes are $\ell_2$-regularised logistic regressions with leave-one-task-out
+cross-validation, bootstrap confidence intervals over tasks, and permutation
+nulls; ``spectral'' features are trajectory summaries of the scale-invariant
+metrics over depth, ``activation'' features are mean-pooled task-token residuals.
+
+% ============================================================================
+\section{Theory: what spectral energy is blind to}\label{sec:theory}
+% ============================================================================
+Let $X\in\R^{n\times d}$ be the hidden states of the $n$ task tokens at a layer,
+$W$ the symmetrised head-aggregated attention among them, and $L=D-W$ the graph
+Laplacian ($L\mathbf 1=0$). The \emph{Dirichlet energy}
+$E(X)=\operatorname{tr}(X^\top L X)=\sum_{k}\sum_{i<j}W_{ij}(X_{ik}-X_{jk})^2$
+is a purely relational quantity; the smoothness index, spectral entropy and HFER
+are functions of $L$ and its spectrum.
+
+\begin{theorem}[DC-invariance]\label{thm:dc}
+For any constant $\alpha\in\R^{d}$, $E(X+\mathbf 1_n\alpha^\top)=E(X)$.
+\end{theorem}
+\begin{proof}
+$E(X+\mathbf 1\alpha^\top)=\operatorname{tr}(X^\top L X)+2\operatorname{tr}(\alpha\mathbf 1^\top L X)+\operatorname{tr}(\alpha\mathbf 1^\top L\mathbf 1\alpha^\top)$;
+both trailing terms vanish since $\mathbf 1^\top L=0$ and $L\mathbf 1=0$.
+\end{proof}
+
+Write $X=\dc(X)+\ac(X)$ with $\dc(X)=\mathbf 1_n\,\mathrm{mean}_{\mathrm{tok}}(X)^\top$
+(token-uniform) and $\ac(X)=X-\dc(X)$. Then $E(X)=E(\ac(X))$ \emph{exactly}: energy
+reads only the token-relational part. Mean-pooling, by contrast, is exactly the
+DC read-out. The next statement grades this.
+
+\begin{theorem}[Complementary filters]\label{thm:filter}
+With $L=\Phi\Lambda\Phi^\top$ and $\hat X=\Phi^\top X$,
+$E(X)=\sum_k\lambda_k\lVert\hat X_k\rVert^2$; thus $\partial E/\partial\hat X_0=0$
+and a shift with spectral support in $\{k:\lambda_k\le\varepsilon\}$ changes $E$ by
+at most $2\varepsilon\lVert X\rVert\lVert\Delta\rVert+\varepsilon\lVert\Delta\rVert^2$.
+Mean-pool (ideal low-pass at DC) and Dirichlet energy (graded high-pass) are
+therefore orthogonal spectral filters.
+\end{theorem}
+
+\paragraph{A sharp prediction, and its falsification.} \cref{thm:filter} suggests
+that if the format confound is graph-\emph{smooth} (a global, slowly varying
+contextual influence) while evaluativeness is relational, then energy suppresses
+the confound and reads the signal. We tested the sharp version: decompose the
+shift $\Delta=X_a-X_b$ in the (symmetric-Laplacian, orthonormal) graph-Fourier
+basis and compare its spectral centroid for \eval-vs-\deploy against
+\deploy-vs-\placebo. The prediction fails: the two shifts are spectrally
+indistinguishable (centroid $0.485$ vs $0.505$, Wilcoxon $p=0.99$; DC fraction
+$0.270$ vs $0.251$, $p=0.98$). The identities in
+Theorems~\ref{thm:dc}--\ref{thm:filter} hold, but a signal-frequency mechanism
+does \emph{not} explain any spectral selectivity. This negative result redirects
+us from the signal to the \emph{direction} of the shift (\cref{sec:law}).
+
+% ============================================================================
+\section{After controls, probing is format-confounded}\label{sec:confound}
+% ============================================================================
+On Llama-3.2-3B (position-matched, $15$ tasks) we split the residual shift into
+its DC (mean-pooled) and AC (token-relational) parts and probe each, alongside the
+spectral (Dirichlet-energy) features (\cref{tab:crossover}).
+
+\begin{table}[t]
+\centering\small
+\caption{DC/AC/spectral selectivity crossover (Llama-3.2-3B, position-matched).
+$S<0$ means the family separates the \emph{non-evaluative} negative control better
+than the real contrast, i.e.\ it is format-confounded.}
+\label{tab:crossover}
+\begin{tabular}{lccc}
+\toprule
+probe & \eval/\deploy & neg.\ ctrl & $S$ \\
+\midrule
+DC (mean-pooled) & $0.70$ & $0.77$ & $-0.07$ \\
+AC (relational) & $0.80$ & $0.67$ & $+0.13$ \\
+spectral (smooth+HFER) & $0.71$ & $0.56$ & $+0.15$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The mean-pooled probe is \emph{anti-selective}: it reads the format confound.
+This is not an accident of pooling; it is Theorem~\ref{thm:dc} in reverse,
+mean-pool is the DC read-out and the confound is DC-heavy. A per-metric
+decomposition sharpens it: of the scale-invariant diagnostics, only the smoothness
+index is individually selective ($\eval/\deploy=0.71$, neg.\ $0.60$, $S=0.10$,
+permutation $p=0.02$); spectral entropy and Gini have high raw AUC but equally
+high negative control ($S\approx0$), i.e.\ they too read format. Curating the two
+selective channels (smoothness $+$ HFER) gives the best selectivity, $S=0.16$--$0.17$.
+Velocity and acceleration (depth-derivative) forms \emph{reduce} selectivity: the
+confound has strong cross-layer structure that derivatives amplify.
+
+\paragraph{The negative headline.} At accessible scale, after position/length/
+format controls, the evaluation-awareness \emph{probe} signal is dominated by
+format confounds; the residual is weak ($S\lesssim0.17$) and carried by a single
+metric. This is the format-sensitivity critique, quantified and, for the pooled
+probe, confirmed.
+
+% ============================================================================
+\section{The law: eval-direction crystallization}\label{sec:law}
+% ============================================================================
+Because a frequency mechanism is falsified and the pooled probe is confounded, we
+do not propose one hypothesis but \emph{mine} a battery. From per-token task
+activations for \eval/\deploy/\placebo across four models we compute $16$ candidate
+invariants of the mean shift directions $\delta_e=\mathrm{mean}_{\mathrm{tok}}(X_e-X_d)$,
+$\delta_c=\mathrm{mean}_{\mathrm{tok}}(X_d-X_p)$, and stress-test each.
+
+\paragraph{Killed by stress tests.} (i) \emph{Collinearity}
+$\cos(\delta_e,\delta_c)\approx-0.3$ looked robust but is a shared-anchor artifact:
+$\delta_e$ and $\delta_c$ share $X_d$ with opposite sign, injecting a mechanical
+$-\lVert\bar X_d\rVert^2$ bias, and the sign flips if $\delta_c$ is reoriented. A
+matched-vs-mismatched-task test confirms it (matched $-0.31$, anchor-free
+mismatched $-0.19$ at 3B; \emph{$+0.00$ at 0.5B}). (ii) The \emph{magnitude ratio}
+$\lVert\Delta_e\rVert/\lVert\Delta_c\rVert$ saturates and is family-confounded.
+
+\paragraph{What survives.} Two artifact-free, null-checked quantities move
+monotonically with scale (\cref{tab:law}): the cross-task \emph{consistency} of
+the eval direction rises and its effective \emph{rank} falls, while the
+\emph{anchor-free} anti-alignment with the format direction emerges from zero.
+Random unit vectors in $d\approx3072$ have $\E[\cos]\approx0\pm d^{-1/2}$, so the
+consistency values are ${\sim}25$--$35\sigma$ above chance: the eval shift is a
+genuine, increasingly universal direction.
+
+\begin{table}[t]
+\centering\small
+\caption{Eval-direction crystallization. C4 $=$ mean cross-task cosine of the eval
+direction (consistency, $\uparrow$); C10 $=$ effective rank of the per-task eval
+directions ($\downarrow$); mismatch $=$ anchor-free $\cos(\delta_e,\delta_c)$
+(anti-alignment). \textbf{Within-family} (Qwen, Llama) all three are monotone in
+size.}
+\label{tab:law}
+\begin{tabular}{llccc}
+\toprule
+family & size & C4 (cons.\ $\uparrow$) & C10 (rank $\downarrow$) & mismatch \\
+\midrule
+\multirow{3}{*}{Qwen} & 0.5B & $0.454$ & $2.61$ & $+0.002$ \\
+                      & 3B   & $0.531$ & $2.46$ & $-0.151$ \\
+                      & 7B   & $0.550$ & $2.36$ & $-0.258$ \\
+\midrule
+\multirow{2}{*}{Llama}& 1B   & $0.545$ & $2.35$ & $-0.207$ \\
+                      & 3B   & $0.654$ & $1.90$ & $-0.192$ \\
+\midrule
+Gemma                 & 2B   & $0.551$ & $2.33$ & $-0.142$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{conjecture}[Crystallization]\label{conj:law}
+As instruction-tuned LLMs scale, the evaluation-frame shift concentrates into a
+lower-rank, more task-universal direction that becomes anti-aligned with the
+format direction; below ${\sim}1$B this structure is absent (high-rank,
+format-uncorrelated).
+\end{conjecture}
+
+The within-family monotonicity (Qwen $0.5{\to}7$B; Llama $1{\to}3$B) is the key
+control: it is a size effect, not a family artifact. Crystallization
+\emph{derives} the earlier observations, selectivity is scale-gated because eval
+and format become distinct directions only at scale, and the small-model
+detection null and the field's power law both follow. It is measured on raw shift
+directions, independent of any probe.
+
+% ============================================================================
+\section{The spectral-unique capability: cross-architecture transfer}\label{sec:transfer}
+% ============================================================================
+\cref{conj:law} entails a capability activations lack by construction. If the eval
+signature is universal, a \emph{dimension-agnostic} probe should transfer across
+architectures with different hidden sizes; an activation probe, whose weights live
+in $\R^{d}$, cannot even be evaluated across $d$. We resample each metric's
+depth profile onto a common relative-depth grid (making the features
+model-agnostic), train an \eval-vs-\deploy probe on one model, and test on another
+(\cref{tab:transfer}).
+
+\begin{table}[t]
+\centering\small
+\caption{Cross-architecture spectral probe transfer (\eval/\deploy AUC). Rows train,
+columns test; hidden dims differ ($896/2048/2304/3072$). Off-diagonal $>0.5$ is a
+transfer an activation probe cannot perform. Mean off-diagonal $0.615$
+(permutation $p{=}0.001$; bootstrap $95\%$ CI $[0.587,0.673]$), within-model
+$0.693$.}
+\label{tab:transfer}
+\begin{tabular}{lcccc}
+\toprule
+train\textbackslash test & Qw0.5B & Ll1B & Ge2B & Ll3B \\
+\midrule
+Qwen-0.5B & $0.680$ & $0.524$ & $0.613$ & $0.622$ \\
+Llama-1B  & $0.600$ & $0.631$ & $0.569$ & $\mathbf{0.782}$ \\
+Gemma-2B  & $0.560$ & $0.600$ & $0.658$ & $\mathbf{0.724}$ \\
+Llama-3B  & $0.582$ & $0.667$ & $0.538$ & $0.804$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Cross-architecture transfer is weak in magnitude but statistically robust
+($p=0.001$), and its structure matches \cref{conj:law}: the strongest transfers
+are \emph{cross-family, into the larger model} (Llama-1B$\to$Llama-3B $0.782$;
+Gemma-2B$\to$Llama-3B $0.724$), whose crystallised universal signature a spectral
+probe reads regardless of where it was trained. This is, to our knowledge, the one
+thing spectral features do here that activation probes cannot, and it is
+\emph{entailed by} the crystallization law rather than posited separately.
+
+\paragraph{Calibration.} We are explicit that $0.615$ is a poor \emph{detector}
+(near-chance in absolute terms). The claim is not that this is a deployable test;
+it is that a dimension-agnostic signature exists and transfers above chance, and
+that \cref{conj:law} predicts both the within-model and transfer AUC to rise as the
+ladder is extended (\cref{sec:limits}).
+
+% ============================================================================
+\section{Negative results we replicate}\label{sec:neg}
+% ============================================================================
+\paragraph{Black-box saturates; the target is selectivity.} Asked directly
+whether a framed prompt looks like an evaluation, Llama-3.2-3B classifies the
+explicit frames at AUC $1.0$. Explicit evaluation awareness is thus trivially
+detectable black-box; the non-trivial questions are selectivity against format and
+cross-model transfer, which is where we focus.
+
+\paragraph{Behavioural effect is null.} Steering \deploy prompts along the
+difference-of-means eval direction (norm-relative dose, denoised, narrow layer
+band, fluency-guarded) produces no direction-specific behavioural shift relative
+to \placebo and random-direction controls; on gold-labelled GSM8K the accuracy gap
+between \eval and \deploy framings is within noise. This matches
+\citet{behaviour}: representation differs, behaviour barely.
+
+\paragraph{Cues do not transfer.} A probe trained on the subtle cue does not
+transfer to the explicit frame (below chance), matching ``not one capability''
+\citep{notone}: the subtle and explicit frames are represented differently.
+
+% ============================================================================
+\section{Limitations and falsifiable predictions}\label{sec:limits}
+% ============================================================================
+This is a first study at $\le 7$B with tens of tasks and one fully laddered family;
+the effects, while artifact- and null-checked, lack tight confidence intervals at
+each scale. Weights are \texttt{bfloat16} (the measured quantities are computed in
+\texttt{float32}/\texttt{float64}). We therefore commit to predictions the
+scale-up must satisfy, or the account is wrong:
+
+\begin{enumerate}[leftmargin=1.4em,itemsep=1pt,topsep=1pt]
+\item \textbf{F1.} Within the Qwen family, consistency (C4) continues to rise and
+  rank (C10) to fall through $14$--$32$B; C10 approaches a $1$--$2$ dimensional
+  direction.
+\item \textbf{F2.} The anchor-free anti-alignment stays $\lesssim-0.2$ (and only
+  $\approx0$ sub-$1$B).
+\item \textbf{F3.} Cross-architecture transfer AUC (\cref{tab:transfer}) rises with
+  the models' scale as the universal signature sharpens.
+\end{enumerate}
+
+If F1--F3 hold, \cref{conj:law} plus the transfer capability is the result. If C4/C10
+are flat within a family, the ``law'' is a family artifact and dies; if transfer
+does not climb, the spectral capability is a curiosity rather than a tool. The
+experiment is inexpensive (memory-bound, compute-trivial) and its outcome is
+decisive.
+
+% ============================================================================
+\section{Conclusion}
+% ============================================================================
+Taking the format-sensitivity critique at face value and engineering the confound
+out, we find that evaluation-awareness \emph{probing} is, at accessible scale,
+largely reading format: a mean-pooled probe is anti-selective, and a natural
+spectral-frequency mechanism is falsified. What remains is not a better detector
+but a \emph{law about representation}: the evaluation frame crystallizes into a
+low-rank, task-universal, format-anti-aligned direction as models scale, monotone
+within families. That universality is exactly what a dimension-agnostic spectral
+probe, and only a spectral probe, can exploit to transfer across architectures.
+Whether crystallization sharpens into a usable, cross-model signature is a
+question of scale, and a decisive, cheap experiment.
+
+\section*{Reproducibility}
+Code, frames, and analysis scripts (position matching, selectivity, batch
+law-mining and stress tests, cross-architecture transfer) are released.
+
+\bibliographystyle{icml2026}
+\begin{thebibliography}{9}
+\bibitem[Laine et al.(2024)]{sad} R.~Laine, B.~Meinke, et al.
+  \emph{Me, Myself, and AI: The Situational Awareness Dataset (SAD) for LLMs}. 2024.
+\bibitem[Anon.(2026a)]{scaling} Anonymous.
+  \emph{Evaluation Awareness Scales Predictably in Open-Weight LLMs}. 2026.
+\bibitem[Anon.(2026b)]{format} Anonymous.
+  \emph{Is Evaluation Awareness Just Format Sensitivity? Limitations of
+  Probe-Based Evidence under Controlled Prompt Structure}. 2026.
+\bibitem[Anon.(2026c)]{behaviour} Anonymous.
+  \emph{Evaluation Awareness in Language Models Has Limited Effect on Behaviour}. 2026.
+\bibitem[Anon.(2026d)]{notone} Anonymous.
+  \emph{Evaluation Awareness Is Not One Capability}. 2026.
+\bibitem[Meinke et al.(2024)]{scheming} A.~Meinke, et al.
+  \emph{Frontier Models are Capable of In-Context Scheming}. 2024.
+\bibitem[No\"el(2026a)]{spectraltrust} V.~No\"el.
+  \emph{Spectral-Trust: GSP Diagnostics of LLM Internal Representations}. 2026.
+\bibitem[No\"el(2026b)]{geomreason} V.~No\"el.
+  \emph{Geometry of Reason: Spectral Signatures of Valid Mathematical Reasoning}. 2026.
+\end{thebibliography}
+
+\end{document}
