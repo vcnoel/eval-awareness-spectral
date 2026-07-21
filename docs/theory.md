@@ -101,6 +101,33 @@ This is falsifiable: if the confound is *not* DC-dominated, DC probes would be s
 Companion (optional second claim): the relational (AC / spectral) selectivity **scales** with model
 size (the field's power-law), tested on the within-family ladders in `configs/models_scaling.json`.
 
+## Theorem 2 prediction P4 is FALSIFIED (Llama-3.2-3B, N=15, symmetric basis)
+
+Theorem-first, then validated — and it failed. The graph-frequency spectrum of the shift:
+
+| quantity | eval-shift | confound-shift | predicted | result |
+|---|---|---|---|---|
+| centroid `c` | 0.485 | 0.505 | eval > | eval **<** (Wilcoxon p=0.99, 2/15 support) |
+| DC fraction `f_DC` | 0.270 | 0.251 | eval < | eval **>** (p=0.98) |
+
+The evaluativeness and pure-confound shifts have **nearly identical graph-frequency spectra**;
+if anything evaluativeness is *slightly more* DC-concentrated — the opposite of P4. Verified under
+the symmetric normalized Laplacian (orthonormal eigenbasis, valid Parseval); an earlier `rw` run
+(non-orthonormal basis, invalid) gave the same sign.
+
+**Consequences (honest):**
+- The identities in Theorem 2 (i–iii) hold, but the **mechanistic premise is false**: a
+  signal-frequency-separation account does **not** explain any spectral selectivity, because the two
+  shifts are spectrally indistinguishable.
+- Together with the single-model, non-replicating crossover below, the defensible conclusion is the
+  **negative/methodological** one: *after position-matching + selectivity controls, the eval-awareness
+  probe signal is format-confound-dominated; the residual relational signal is weak, scale-gated, and
+  carries no distinctive graph-frequency signature.* This directly answers the field's open question
+  ("Is evaluation awareness just format sensitivity?") — largely yes; spectral geometry does not rescue it.
+- Remaining untested locus (a hypothesis, **not** a claim): the eval-selective information, if any, may
+  reside in the **attention graph** `W` itself (which spectral metrics see and mean-pool does not),
+  not in the signal `X`. This would need a graph-change test; do not assert it without one.
+
 ## Validation status (small-scale, N=15 tasks, position-matched) — HONEST
 
 The crossover prediction is **confirmed clearly in one model and not yet replicated**:

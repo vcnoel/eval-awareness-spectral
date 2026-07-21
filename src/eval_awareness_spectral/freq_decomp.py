@@ -58,6 +58,10 @@ def run(rc: RunConfig, tasks_n: int = 15, layer_lo_frac: float = 0.4) -> pd.Data
     framings = load_framings(rc.framings_path)
     conds = ["deploy", "eval", "placebo"]
     cfg = _gsp_config(rc, Path(rc.output_dir) / rc.name)
+    # A valid graph-Fourier transform needs an ORTHONORMAL eigenbasis, so use the
+    # symmetric normalized Laplacian (rw's eigenvectors are non-orthonormal and would
+    # make Phi^T Δ / the per-frequency energies meaningless).
+    cfg.normalization = "sym"
 
     rows = []
     with GSPDiagnosticsFramework(cfg) as fw:
