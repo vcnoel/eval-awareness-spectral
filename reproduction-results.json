@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "status": "pass",
+  "scope": "registered code-and-documentation protocol invariants; empirical reproduction is not applicable because no source experiment or artifact-backed result exists",
+  "metrics": [
+    {
+      "name": "validated empirical claims bundled",
+      "recorded": 0,
+      "reproduced": 0,
+      "tolerance": "exact",
+      "within": true
+    },
+    {
+      "name": "unsafe random-walk basis paths accepted",
+      "recorded": 0,
+      "reproduced": 0,
+      "tolerance": "exact",
+      "within": true
+    },
+    {
+      "name": "correctness-critical statement coverage",
+      "recorded": ">=90%",
+      "reproduced": "97.24%",
+      "tolerance": ">=90%",
+      "within": true
+    },
+    {
+      "name": "CPU synthetic tests passing",
+      "recorded": "complete suite",
+      "reproduced": "68/68 on Python 3.11 and 68/68 on Python 3.12",
+      "tolerance": "all pass",
+      "within": true
+    },
+    {
+      "name": "model, dataset, inference, or GPU jobs",
+      "recorded": 0,
+      "reproduced": 0,
+      "tolerance": "exact",
+      "within": true
+    },
+    {
+      "name": "undefined manuscript citations",
+      "recorded": 0,
+      "reproduced": 0,
+      "tolerance": "exact",
+      "within": true
+    }
+  ]
+}

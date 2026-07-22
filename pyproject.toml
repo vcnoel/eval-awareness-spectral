@@ -8,17 +8,17 @@ version = "0.2.0"
 description = "Causal research protocol for evaluation cues, internal recognition, and behavioral propensity"
 readme = "README.md"
 requires-python = ">=3.11"
-license = { file = "LICENSE" }
+license = "AGPL-3.0-or-later"
+license-files = ["LICENSE"]
 authors = [{ name = "Valentin Noël" }]
 classifiers = [
   "Development Status :: 3 - Alpha",
-  "License :: OSI Approved :: GNU Affero General Public License v3",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
 dependencies = [
-  "numpy>=1.26,<3",
+  "numpy>=1.26,<2.3",
   "scikit-learn>=1.4,<2",
   "scipy>=1.11,<2",
 ]
@@ -48,12 +48,25 @@ addopts = "--strict-config --strict-markers -ra"
 testpaths = ["tests"]
 
 [tool.coverage.run]
-branch = true
+branch = false
 source = ["eval_awareness_spectral"]
 omit = [
+  "src/eval_awareness_spectral/__init__.py",
+  "src/eval_awareness_spectral/cli.py",
+  "src/eval_awareness_spectral/config.py",
+  "src/eval_awareness_spectral/schemas.py",
+  "src/eval_awareness_spectral/data/factors.py",
+  "src/eval_awareness_spectral/data/manifests.py",
+  "src/eval_awareness_spectral/evaluation/probes.py",
+  "src/eval_awareness_spectral/evaluation/scaling.py",
+  "src/eval_awareness_spectral/evaluation/selectivity.py",
+  "src/eval_awareness_spectral/integrations/*.py",
+  "src/eval_awareness_spectral/interventions/*.py",
+  "src/eval_awareness_spectral/representations/residual.py",
   "src/eval_awareness_spectral/activations.py",
   "src/eval_awareness_spectral/analysis.py",
   "src/eval_awareness_spectral/baselines.py",
+  "src/eval_awareness_spectral/causal.py",
   "src/eval_awareness_spectral/decomposition.py",
   "src/eval_awareness_spectral/freq_decomp.py",
   "src/eval_awareness_spectral/generation.py",
@@ -84,7 +97,7 @@ ignore = ["E501"]
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**/*.py" = ["B018"]
-"src/eval_awareness_spectral/{activations,analysis,baselines,decomposition,freq_decomp,generation,law_mining,legacy_cli,metric_study,plots,prompts,runner,sandbagging,separability,spans,spectral_transfer}.py" = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
+"src/eval_awareness_spectral/{activations,analysis,baselines,causal,decomposition,freq_decomp,generation,law_mining,legacy_cli,metric_study,plots,prompts,runner,sandbagging,separability,spans,spectral_transfer}.py" = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
 "scripts/**/*.py" = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
 
 [tool.mypy]
@@ -92,7 +105,7 @@ python_version = "3.11"
 strict = true
 packages = ["eval_awareness_spectral"]
 exclude = [
-  "src/eval_awareness_spectral/(activations|analysis|baselines|decomposition|freq_decomp|generation|law_mining|legacy_cli|metric_study|plots|prompts|runner|sandbagging|separability|spans|spectral_transfer)\\.py",
+  "src/eval_awareness_spectral/(activations|analysis|baselines|causal|decomposition|freq_decomp|generation|law_mining|legacy_cli|metric_study|plots|prompts|runner|sandbagging|separability|spans|spectral_transfer)\\.py",
 ]
 ignore_missing_imports = true
 warn_unused_ignores = true

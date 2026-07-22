@@ -12,8 +12,9 @@ import json
 import logging
 import sys
 import warnings
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from .claims import audit_claim_files, packaged_results_schema, validate_result_manifest
 from .config import load_config
@@ -40,9 +41,7 @@ class JsonFormatter(logging.Formatter):
 def configure_logging(*, json_logs: bool = False, verbose: bool = False) -> None:
     handler = logging.StreamHandler()
     handler.setFormatter(
-        JsonFormatter()
-        if json_logs
-        else logging.Formatter("%(levelname)s %(name)s: %(message)s")
+        JsonFormatter() if json_logs else logging.Formatter("%(levelname)s %(name)s: %(message)s")
     )
     logging.basicConfig(
         level=logging.DEBUG if verbose else logging.INFO,
@@ -91,8 +90,9 @@ def _legacy(argv: list[str]) -> int:
         DeprecationWarning,
         stacklevel=2,
     )
-    from .legacy_cli import main as legacy_main
+    from .legacy_cli import main as untyped_legacy_main
 
+    legacy_main = cast(Callable[[list[str]], int | None], untyped_legacy_main)
     result = legacy_main(argv)
     return 0 if result is None else int(result)
 

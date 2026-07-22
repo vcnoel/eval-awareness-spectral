@@ -120,14 +120,12 @@ class NumpyActivationBatch:
             raise ValidationError(
                 f"unknown activation selection: sequence_id={sequence_id!r}, layer={layer}"
             ) from error
-        return self.values[sequence_position, layer_position]
+        return np.asarray(self.values[sequence_position, layer_position], dtype=np.float64)
 
     def ordinary_dc_ac(self, sequence_id: str, layer: int) -> DCACDecomposition:
         return ordinary_dc_ac(self.signal(sequence_id, layer))
 
-    def dirichlet_energy(
-        self, sequence_id: str, layer: int, adjacency: npt.ArrayLike
-    ) -> float:
+    def dirichlet_energy(self, sequence_id: str, layer: int, adjacency: npt.ArrayLike) -> float:
         return dirichlet_energy(self.signal(sequence_id, layer), adjacency)
 
     def graph_fourier_metrics(

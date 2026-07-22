@@ -15,3 +15,14 @@ __pycache__/
 # OS
 .DS_Store
 Thumbs.db
+
+# Build and coverage artifacts
+build/
+.coverage
+htmlcov/
+
+# Lab-local export state (never ship)
+.pi-subagents/
+experiments/
+.silico-session
+.silico-session.json

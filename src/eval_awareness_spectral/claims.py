@@ -6,7 +6,7 @@ import json
 import re
 from importlib.resources import files
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 from .provenance import sha256_file
 from .schemas import ClaimStatus, ValidationError
@@ -20,11 +20,11 @@ _EMPIRICAL_NUMBER = re.compile(
 
 def packaged_results_schema() -> dict[str, Any]:
     resource = files("eval_awareness_spectral.resources").joinpath("results_manifest.schema.json")
-    return json.loads(resource.read_text(encoding="utf-8"))
+    return cast(dict[str, Any], json.loads(resource.read_text(encoding="utf-8")))
 
 
 def load_claim_ledger(path: str | Path) -> dict[str, Any]:
-    ledger = json.loads(Path(path).read_text(encoding="utf-8"))
+    ledger = cast(dict[str, Any], json.loads(Path(path).read_text(encoding="utf-8")))
     if not isinstance(ledger.get("claims"), list):
         raise ValidationError("claim ledger must contain a claims list")
     valid = {status.value for status in ClaimStatus}
@@ -45,7 +45,7 @@ def validate_result_manifest(manifest_path: str | Path) -> dict[str, Any]:
     """Validate required fields and every artifact checksum without network access."""
 
     path = Path(manifest_path)
-    value = json.loads(path.read_text(encoding="utf-8"))
+    value = cast(dict[str, Any], json.loads(path.read_text(encoding="utf-8")))
     required = set(packaged_results_schema()["required"])
     missing = required - set(value)
     if missing:
@@ -81,9 +81,12 @@ def validate_claim_text(text: str, *, source: str, validated_claim_ids: set[str]
 def audit_claim_files(
     paths: list[str | Path], ledger_path: str | Path, *, repository_root: str | Path = "."
 ) -> None:
-    ledger = load_claim_ledger(ledger_path)
-    validated: set[str] = set()
     root = Path(repository_root)
+    ledger_file = Path(ledger_path)
+    if not ledger_file.is_absolute():
+        ledger_file = root / ledger_file
+    ledger = load_claim_ledger(ledger_file)
+    validated: set[str] = set()
     for claim in ledger["claims"]:
         if claim["status"] != ClaimStatus.VALIDATED.value:
             continue

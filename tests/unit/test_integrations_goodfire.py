@@ -59,7 +59,7 @@ def test_status_inspection_does_not_import_packages(monkeypatch: pytest.MonkeyPa
 
     monkeypatch.setattr(module, "find_spec", inspect)
     statuses = integration_status()
-    assert set(inspected) == {"goodfire", "causalab", "sglang", "lm_eval"}
+    assert set(inspected) == {"goodfire_core", "causalab", "sglang", "lm_eval"}
     assert not any(status.available for status in statuses.values())
 
 

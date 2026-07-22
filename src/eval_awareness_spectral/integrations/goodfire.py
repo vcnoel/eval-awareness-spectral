@@ -67,7 +67,9 @@ def require_optional_package(name: str) -> ModuleType:
         module_name, hint = _OPTIONAL_PACKAGES[name]
     except KeyError as error:
         choices = ", ".join(sorted(_OPTIONAL_PACKAGES))
-        raise ValueError(f"unknown optional integration {name!r}; choose one of: {choices}") from error
+        raise ValueError(
+            f"unknown optional integration {name!r}; choose one of: {choices}"
+        ) from error
     try:
         return import_module(module_name)
     except (ImportError, ModuleNotFoundError) as error:
@@ -172,7 +174,7 @@ def adapt_activation_container(container: Iterable[object]) -> list[ActivationRe
 
 
 def run_causal_interchange(
-    runner: CausalInterchangeRunner[T],
+    runner: CausalInterchangeRunner,
     *,
     recipient: T,
     donor: T,
