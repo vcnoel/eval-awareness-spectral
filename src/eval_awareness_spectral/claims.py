@@ -11,10 +11,17 @@ from typing import Any, cast
 from .provenance import sha256_file
 from .schemas import ClaimStatus, ValidationError
 
+_NUMBER = r"(?:\d+\.\d+|\.\d+|\d+)(?!\.\s)"
+_METRIC = (
+    r"(?:auc|auroc|accuracy|selectivity|effect\s+size|p\s*[- ]?value|"
+    r"confidence\s+interval|sample\s+size)"
+)
 _EMPIRICAL_NUMBER = re.compile(
-    r"(?ix)(?:\b(?:auc|auroc|accuracy|selectivity|effect\s+size|p\s*[- ]?value|"
-    r"confidence\s+interval|sample\s+size|n\s*=)\b[^\n]{0,40}?"
-    r"(?:\d+(?:\.\d+)?|\d+\s*%))|(?:\d+(?:\.\d+)?\s*%\b)"
+    rf"(?ix)(?:"
+    rf"\b{_METRIC}\b[^\n]{{0,40}}?{_NUMBER}"
+    rf"|{_NUMBER}[^\n]{{0,40}}?\b{_METRIC}\b"
+    rf"|\b(?:n|p|d(?:_?z)?|cohen'?s?\s+d)\s*[:=]\s*{_NUMBER}"
+    rf"|{_NUMBER}\s*%\b)"
 )
 
 

@@ -20,7 +20,7 @@
     {
       "name": "registered six-area correctness-surface statement coverage",
       "recorded": ">=90%",
-      "reproduced": "97.26% across claims, provenance, splits, statistics, transfer, and spectral/operator validation",
+      "reproduced": "97.27% across claims, provenance, splits, statistics, transfer, and spectral/operator validation",
       "tolerance": ">=90%",
       "within": true
     },

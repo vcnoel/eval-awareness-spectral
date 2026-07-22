@@ -177,8 +177,13 @@ def test_claim_ledger_validation_errors(tmp_path: Path) -> None:
 
 def test_claim_text_requires_nearby_validated_marker() -> None:
     validate_claim_text("No result is asserted.", source="safe.md", validated_claim_ids=set())
-    with pytest.raises(ValidationError, match="unmanifested empirical number"):
-        validate_claim_text("Held-out AUC was 0.75.", source="bad.md", validated_claim_ids=set())
+    for phrase in (
+        "Held-out AUC was 0.75.",
+        "The probe achieved 0.94 AUROC on held-out tasks.",
+        "The standardized effect was d = 0.8.",
+    ):
+        with pytest.raises(ValidationError, match="unmanifested empirical number"):
+            validate_claim_text(phrase, source="bad.md", validated_claim_ids=set())
     validate_claim_text(
         "Held-out AUC was 0.75 (claim:claim-one).",
         source="good.md",
