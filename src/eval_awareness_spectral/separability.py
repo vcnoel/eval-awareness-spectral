@@ -402,15 +402,13 @@ def run_separability(long_csv, fiedler_pkl, out_dir,
                      scope: str = "task_subgraph", normalization: str = "sym",
                      n_boot: int = 1000, n_perm: int = 1000) -> dict:
     """End-to-end separability suite; writes CSVs, returns the frames."""
-    from .analysis import load_long
+    from .analysis import load_long, require_cell_metadata
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     df = load_long(long_csv)
     if df.empty:
         return {}
-    for col, default in [("graph_scope", "full"), ("normalization", "sym")]:
-        if col not in df.columns:
-            df[col] = default
+    require_cell_metadata(df)
 
     probe = probe_separability(df, cond_a, cond_b, scope, normalization, n_boot, n_perm)
     layer_probe = per_layer_probe(df, cond_a, cond_b, scope, normalization)

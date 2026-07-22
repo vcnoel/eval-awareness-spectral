@@ -18,16 +18,16 @@
       "within": true
     },
     {
-      "name": "correctness-critical statement coverage",
+      "name": "registered six-area correctness-surface statement coverage",
       "recorded": ">=90%",
-      "reproduced": "97.24%",
+      "reproduced": "97.26% across claims, provenance, splits, statistics, transfer, and spectral/operator validation",
       "tolerance": ">=90%",
       "within": true
     },
     {
       "name": "CPU synthetic tests passing",
       "recorded": "complete suite",
-      "reproduced": "68/68 on Python 3.11 and 68/68 on Python 3.12",
+      "reproduced": "69/69 on Python 3.11 and 69/69 on Python 3.12",
       "tolerance": "all pass",
       "within": true
     },

@@ -19,6 +19,7 @@ class TransferIdentity:
     source_task_id: str
     negative_example_id: str | None = None
     model_family: str | None = None
+    template_family: str | None = None
 
 
 def _non_null(items: list[TransferIdentity], attribute: str) -> set[str]:
@@ -41,9 +42,17 @@ def validate_transfer_identities(
     test = list(evaluation)
     if not train or not test:
         raise ValidationError("training and evaluation identities must not be empty")
+    if any(
+        not isinstance(item.template_family, str) or not item.template_family
+        for item in [*train, *test]
+    ):
+        raise ValidationError(
+            "template-disjoint transfer requires template_family on every identity"
+        )
     checks = (
         ("row_id", "row ID"),
         ("source_task_id", "source task"),
+        ("template_family", "template family"),
         ("negative_example_id", "negative-example identity"),
     )
     for attribute, label in checks:

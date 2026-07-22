@@ -53,10 +53,21 @@ def load_long(path) -> pd.DataFrame:
         return pd.DataFrame()
 
 
+def require_cell_metadata(df: pd.DataFrame) -> None:
+    """Reject untagged legacy rows instead of relabeling random-walk metrics."""
+    missing = {"graph_scope", "normalization"} - set(df.columns)
+    if missing:
+        raise ValueError(
+            "legacy diagnostics lack explicit graph_scope/normalization metadata; "
+            "they may contain invalid random-walk basis metrics and must be recomputed"
+        )
+
+
 def cells_in(df: pd.DataFrame) -> List[Tuple[str, str]]:
     """Distinct (graph_scope, normalization) cells present, primary cell first."""
-    if df.empty or "graph_scope" not in df.columns:
-        return [("full", "sym")]
+    if df.empty:
+        return []
+    require_cell_metadata(df)
     have = (
         df[["graph_scope", "normalization"]].drop_duplicates()
         .itertuples(index=False, name=None)
@@ -338,10 +349,7 @@ def run_analysis(long_csv, out_dir, cond_a: str = "eval", cond_b: str = "deploy"
         return {"effects": empty, "summary": empty, "means": empty,
                 "velocity_clusters": empty, "peak_stability": empty}
 
-    # Back-compat: tag a cell if the CSV predates the columns.
-    for col, default in [("graph_scope", "full"), ("normalization", "sym")]:
-        if col not in df.columns:
-            df[col] = default
+    require_cell_metadata(df)
 
     eff_frames, sum_frames, mean_frames = [], [], []
     for scope, norm in cells_in(df):

@@ -25,7 +25,7 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 
-from .analysis import load_long
+from .analysis import load_long, require_cell_metadata
 from .baselines import MOMENT_NAMES  # ["mean_norm","token_var","participation_ratio"]
 from .separability import TRAJECTORY_STATS, _trajectory, probe_matrix
 
@@ -109,9 +109,7 @@ def run(results_model_dir, n_perm=1000):
     npz_path = d / "activations.npz"
     if df.empty or not npz_path.exists():
         print("missing diagnostics or activations at", d); return {}
-    for col, default in [("graph_scope", "task_subgraph"), ("normalization", "sym")]:
-        if col not in df.columns:
-            df[col] = default
+    require_cell_metadata(df)
     nz = np.load(npz_path, allow_pickle=True)
     npz = {k: nz[k] for k in nz.files}; npz["model"] = str(npz["model"])
 

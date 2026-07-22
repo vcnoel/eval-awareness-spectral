@@ -16,16 +16,38 @@ from eval_awareness_spectral.schemas import ValidationError
 
 
 def test_shared_negative_and_source_task_identities_are_rejected() -> None:
-    training = [TransferIdentity("row-a", "task-a", "negative-a", "family-a")]
+    training = [
+        TransferIdentity(
+            "row-a", "task-a", "negative-a", "family-a", "template-a"
+        )
+    ]
     with pytest.raises(ValidationError, match="negative-example"):
         validate_transfer_identities(
             training,
-            [TransferIdentity("row-b", "task-b", "negative-a", "family-b")],
+            [
+                TransferIdentity(
+                    "row-b", "task-b", "negative-a", "family-b", "template-b"
+                )
+            ],
         )
     with pytest.raises(ValidationError, match="source task"):
         validate_transfer_identities(
             training,
-            [TransferIdentity("row-c", "task-a", "negative-c", "family-b")],
+            [
+                TransferIdentity(
+                    "row-c", "task-a", "negative-c", "family-b", "template-c"
+                )
+            ],
+        )
+
+    with pytest.raises(ValidationError, match="template family"):
+        validate_transfer_identities(
+            training,
+            [
+                TransferIdentity(
+                    "row-d", "task-d", "negative-d", "family-b", "template-a"
+                )
+            ],
         )
 
 

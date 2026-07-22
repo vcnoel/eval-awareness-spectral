@@ -48,9 +48,13 @@ def test_task_bootstrap_validation_and_nonfinite_statistic() -> None:
 
 
 def _identity(
-    row: str, task: str, negative: str | None = None, family: str | None = None
+    row: str,
+    task: str,
+    negative: str | None = None,
+    family: str | None = None,
+    template: str | None = None,
 ) -> TransferIdentity:
-    return TransferIdentity(row, task, negative, family)
+    return TransferIdentity(row, task, negative, family, template or f"template-{row}")
 
 
 def test_transfer_identity_all_overlap_and_family_error_paths() -> None:
@@ -62,6 +66,11 @@ def test_transfer_identity_all_overlap_and_family_error_paths() -> None:
         validate_transfer_identities([_identity("a", "t")], [_identity("b", "t")])
     with pytest.raises(ValidationError, match="negative-example"):
         validate_transfer_identities([_identity("a", "ta", "neg")], [_identity("b", "tb", "neg")])
+    with pytest.raises(ValidationError, match="template_family"):
+        validate_transfer_identities(
+            [TransferIdentity("a", "ta")],
+            [_identity("b", "tb", family="fb")],
+        )
     with pytest.raises(ValidationError, match="requires model_family"):
         validate_transfer_identities(
             [_identity("a", "ta")],
@@ -73,6 +82,11 @@ def test_transfer_identity_all_overlap_and_family_error_paths() -> None:
             [_identity("a", "ta", family="f")],
             [_identity("b", "tb", family="f")],
             require_held_out_model_family=True,
+        )
+    with pytest.raises(ValidationError, match="template family"):
+        validate_transfer_identities(
+            [_identity("a", "ta", template="shared")],
+            [_identity("b", "tb", template="shared")],
         )
     validate_transfer_identities(
         [_identity("a", "ta", "na", "fa")],

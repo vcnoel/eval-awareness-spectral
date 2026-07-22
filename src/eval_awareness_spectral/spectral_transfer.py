@@ -23,7 +23,7 @@ from typing import Dict, List
 import numpy as np
 import pandas as pd
 
-from .analysis import load_long
+from .analysis import load_long, require_cell_metadata
 
 RESULTS = Path(__file__).resolve().parents[2] / "results"
 METRICS = ["smoothness_index", "hfer", "spectral_entropy", "gini_sparsity"]
@@ -83,9 +83,7 @@ def run(cond_a="eval", cond_b="deploy", models=None) -> pd.DataFrame:
         df = load_long(p)
         if df.empty:
             continue
-        for c, default in [("graph_scope", "task_subgraph"), ("normalization", "sym")]:
-            if c not in df.columns:
-                df[c] = default
+        require_cell_metadata(df)
         f = model_features(df)
         f = f[f.condition.isin([cond_a, cond_b])]
         feats[name] = f

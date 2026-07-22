@@ -19,7 +19,8 @@
 - Source-task and template-family leakage into confirmation are rejected.
 - Scaling, principal components, feature selection, tuning, probe fitting, and thresholds remain inside grouped training folds.
 - Permutations rebuild the complete selected pipeline.
-- Transfer rejects shared rows, source tasks, negative examples, and optionally model families.
+- Transfer requires template-family metadata and rejects shared rows, source tasks, template families, negative examples, and optionally model families.
+- Untagged historical diagnostics fail instead of being relabeled as symmetric; affected legacy outputs must be recomputed.
 - Causal tests target explicit layers/tokens/subspaces and require behavioral sign of life, bidirectional directions, and matched controls.
 
 ## Commands and outcomes
@@ -43,7 +44,7 @@ UV_PYTHON_INSTALL_DIR="$HOME/.cache/uv/python" \
   uv run --isolated --python 3.11 --extra dev mypy src/eval_awareness_spectral
 ```
 
-Pass: 68 tests, zero failures, 97.24% statement coverage on the correctness-critical modules, and strict type checking over 28 source files.
+Pass: 69 tests, zero failures, and strict type checking over 28 source files. Statement coverage is 97.26% on the accepted plan's exact correctness surface: `claims.py`, `provenance.py`, `data/splits.py`, `evaluation/statistics.py`, `evaluation/transfer.py`, `representations/attention_graph.py`, and `representations/spectral.py`.
 
 ### Python 3.12
 
@@ -55,7 +56,7 @@ uv run --isolated --python 3.12 --extra dev \
   pytest --cov=eval_awareness_spectral --cov-report=term-missing -q
 ```
 
-Pass: Ruff clean; strict mypy clean; 68 tests, zero failures, and 97.24% correctness-critical statement coverage. The registered threshold is 90%.
+Pass: Ruff clean; strict mypy clean; 69 tests and zero failures. The same seven-file registered correctness surface reaches 97.26% statement coverage against a 90% threshold; the percentage is not presented as whole-package coverage.
 
 ### Claim and configuration validation
 
@@ -83,7 +84,7 @@ cd "$TEMP"
   "$CHECKOUT/configs/protocol.example.json"
 ```
 
-Pass outside the source tree. The wheel is 127,991 bytes; package data resolves; CLI help, schema, and config validation work. Import inspection confirmed that `torch`, `transformers`, `datasets`, `spectral_trust`, `goodfire_core`, `causalab`, `sglang`, and `lm_eval` were not imported.
+Pass outside the source tree. The reviewed wheel is 128,088 bytes; package data resolves; CLI help, schema, and config validation work. Import inspection confirmed that `torch`, `transformers`, `datasets`, `spectral_trust`, `goodfire_core`, `causalab`, `sglang`, and `lm_eval` were not imported.
 
 ### Manuscript
 

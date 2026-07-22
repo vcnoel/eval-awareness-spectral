@@ -367,6 +367,7 @@ analysis = [
 dev = [
     { name = "build" },
     { name = "mypy" },
+    { name = "pandas" },
     { name = "pytest" },
     { name = "pytest-cov" },
     { name = "ruff" },
@@ -384,6 +385,7 @@ requires-dist = [
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.10,<2" },
     { name = "numpy", specifier = ">=1.26,<2.3" },
     { name = "pandas", marker = "extra == 'analysis'", specifier = ">=2.1,<3" },
+    { name = "pandas", marker = "extra == 'dev'", specifier = ">=2.1,<3" },
     { name = "pandas", marker = "extra == 'legacy'", specifier = ">=2.1,<3" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.2,<9" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=5,<7" },
