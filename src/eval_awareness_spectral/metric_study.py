@@ -157,12 +157,12 @@ def combination_study(df, scope, norm, n_perm=1000) -> Tuple[pd.DataFrame, pd.Da
     return pairs, pd.DataFrame(path)
 
 
-def run(results_model_dir, scope="task_subgraph", norm="rw", n_perm=1000) -> dict:
+def run(results_model_dir, scope="task_subgraph", norm="sym", n_perm=1000) -> dict:
     d = Path(results_model_dir)
     df = load_long(d / "diagnostics_long.csv")
     if df.empty:
         print("no diagnostics found at", d); return {}
-    for col, default in [("graph_scope", "full"), ("normalization", "rw")]:
+    for col, default in [("graph_scope", "full"), ("normalization", "sym")]:
         if col not in df.columns:
             df[col] = default
 

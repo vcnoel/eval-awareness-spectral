@@ -6,15 +6,14 @@ per-layer ``SpectralDiagnostics`` it returns.
 
 A prompt is analyzed once per **cell** = (graph_scope, normalization):
 
-  * ``(full, rw)``          — whole prompt; length is an observable.
-  * ``(task_subgraph, rw)`` — PRIMARY. Pass ``subgraph_indices`` = the byte-identical
-                              task tokens so the graph is built on a fixed node set.
-                              Under ``rw`` the Laplacian is ``I - D⁻¹W`` with the
-                              *subgraph* degree, so it is intrinsically row-normalized
-                              (the softmax mass-leak to frame tokens is divided out).
-  * ``(task_subgraph, none)`` — DEMONSTRATOR. Combinatorial ``L = D - W`` on the same
-                              nodes; the length/mass artifact is *visible* here, which
-                              is the point (it shows what the ``rw`` cell controls for).
+  * ``(full, sym)``          — whole prompt; length is an observable.
+  * ``(task_subgraph, sym)`` — PRIMARY. The symmetric normalized Laplacian supplies
+                               a valid Euclidean-orthonormal graph-Fourier basis on the
+                               byte-identical task-token node set.
+  * ``(task_subgraph, none)`` — Combinatorial ``L = D - W`` on the same nodes.
+
+The former random-walk cell is rejected because ``I - D⁻¹W`` is generally
+non-symmetric and cannot be passed to a symmetric eigensolver as an orthonormal basis.
 
 Selecting a cell = setting ``framework.config.normalization`` and passing (or not)
 ``subgraph_indices`` to ``analyze_text``. Each cell re-runs the forward pass; that is
@@ -70,9 +69,9 @@ SCALAR_METRICS = [
 
 # A "cell" is (graph_scope, normalization). Default set for v2 sweeps.
 DEFAULT_CELLS: List[Tuple[str, str]] = [
-    ("full", "rw"),
-    ("task_subgraph", "rw"),    # PRIMARY
-    ("task_subgraph", "none"),  # mass-leak / length demonstrator
+    ("full", "sym"),
+    ("task_subgraph", "sym"),
+    ("task_subgraph", "none"),
 ]
 
 
@@ -95,6 +94,14 @@ class RunConfig:
     local_files_only: bool = True
     model_kwargs: Dict = field(default_factory=dict)
 
+    def __post_init__(self) -> None:
+        invalid = [cell for cell in self.cells if cell[1] == "rw"]
+        if invalid:
+            raise ValueError(
+                "random-walk cells cannot produce basis-dependent diagnostics; "
+                "use symmetric normalization or a graph-only legacy diagnostic"
+            )
+
 
 def _gsp_config(rc: RunConfig, model_out_dir: Path) -> GSPConfig:
     return GSPConfig(
@@ -110,7 +117,7 @@ def _gsp_config(rc: RunConfig, model_out_dir: Path) -> GSPConfig:
         # those metrics. (Confirmed by the agent-safety spectral baseline, which
         # forces dense for exactly this reason.)
         eigen_solver="dense",
-        normalization="rw",       # per-cell overridden in the loop
+        normalization="sym",      # per-cell overridden in the loop
         directed=rc.directed,     # library adds spectral_radius/max_imaginary
         local_files_only=rc.local_files_only,
         output_dir=str(model_out_dir),
@@ -155,6 +162,10 @@ def analyze_prompt(
 
     try:
         for scope, norm in cells:
+            if norm == "rw":
+                raise ValueError(
+                    "random-walk basis analysis is invalid; use normalization='sym'"
+                )
             is_sub = scope != "full"
             if is_sub and idx is None:
                 continue

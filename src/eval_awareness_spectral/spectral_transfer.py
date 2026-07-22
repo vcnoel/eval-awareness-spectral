@@ -7,7 +7,7 @@ and d differs across models). So if a spectral eval-vs-deploy probe transfers ac
 models above chance, that is a capability activations lack by construction.
 
 For each model we build per-prompt features by interpolating each metric's per-layer
-profile (task_subgraph/rw) onto a fixed relative-depth grid, then train a logistic probe
+profile (task_subgraph/sym) onto a fixed relative-depth grid, then train a logistic probe
 on model A (eval vs deploy) and evaluate its AUC on model B. Off-diagonal AUC > 0.5 is
 the spectral-unique result. Activation baseline: N/A across models (dim mismatch).
 
@@ -37,7 +37,7 @@ MODELS = [  # (dir, name, hidden_dim) — note the DIFFERENT dims (why activatio
 ]
 
 
-def model_features(df: pd.DataFrame, scope="task_subgraph", norm="rw") -> pd.DataFrame:
+def model_features(df: pd.DataFrame, scope="task_subgraph", norm="sym") -> pd.DataFrame:
     cell = df[(df.graph_scope == scope) & (df.normalization == norm)]
     metrics = [m for m in METRICS if m in cell.columns]
     agg = cell.groupby(["task_id", "condition", "layer"])[metrics].mean().reset_index()
@@ -83,7 +83,7 @@ def run(cond_a="eval", cond_b="deploy", models=None) -> pd.DataFrame:
         df = load_long(p)
         if df.empty:
             continue
-        for c, default in [("graph_scope", "task_subgraph"), ("normalization", "rw")]:
+        for c, default in [("graph_scope", "task_subgraph"), ("normalization", "sym")]:
             if c not in df.columns:
                 df[c] = default
         f = model_features(df)

@@ -72,8 +72,8 @@ def main():
     # Under position-matching the preamble is mostly filler, so the FULL-scope graph
     # is meaningless (and its huge, filler-heavy Laplacian is slow/degenerate). Use
     # only the task_subgraph cell in that mode; keep both cells otherwise.
-    cells = ([("task_subgraph", "rw")] if args.position_match
-             else [("full", "rw"), ("task_subgraph", "rw")])
+    cells = ([("task_subgraph", "sym")] if args.position_match
+             else [("full", "sym"), ("task_subgraph", "sym")])
     rc = RunConfig(
         name=args.model, hf_id=args.hf_id, dtype="float32", device="cuda",
         conditions=conditions, cells=cells,

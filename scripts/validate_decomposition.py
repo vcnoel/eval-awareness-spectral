@@ -54,7 +54,7 @@ def main():
     for name, hf_id, dtype in SMALL:
         log.info("=== %s ===", name)
         rc = RunConfig(name=name, hf_id=hf_id, dtype=dtype, device="cuda",
-                       conditions=conds, cells=[("task_subgraph", "rw")], directed=False,
+                       conditions=conds, cells=[("task_subgraph", "sym")], directed=False,
                        position_match=True, output_dir=str(out), tasks_path=str(subset))
         mdir = out / name
         try:
