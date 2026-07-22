@@ -60,7 +60,7 @@ def _trajectory(profile: np.ndarray) -> np.ndarray:
 # --------------------------------------------------------------- feature build
 
 def build_features(df: pd.DataFrame, scope: str = "task_subgraph",
-                   normalization: str = "rw", metrics: Optional[List[str]] = None,
+                   normalization: str = "sym", metrics: Optional[List[str]] = None,
                    mode: str = "trajectory") -> pd.DataFrame:
     """One row per (model, task_id, condition) of probe features (runs averaged).
 
@@ -189,7 +189,7 @@ def probe_matrix(feats: pd.DataFrame, feature_cols: List[str],
 
 
 def probe_separability(df: pd.DataFrame, cond_a: str = "eval", cond_b: str = "deploy",
-                       scope: str = "task_subgraph", normalization: str = "rw",
+                       scope: str = "task_subgraph", normalization: str = "sym",
                        n_boot: int = 1000, n_perm: int = 1000, seed: int = 0) -> pd.DataFrame:
     """Per model: leave-task-out AUC + bootstrap CI + permutation-null p for cond_a vs cond_b."""
     feats = build_features(df, scope, normalization)
@@ -249,7 +249,7 @@ def probe_separability(df: pd.DataFrame, cond_a: str = "eval", cond_b: str = "de
 
 
 def per_layer_probe(df: pd.DataFrame, cond_a: str = "eval", cond_b: str = "deploy",
-                    scope: str = "task_subgraph", normalization: str = "rw") -> pd.DataFrame:
+                    scope: str = "task_subgraph", normalization: str = "sym") -> pd.DataFrame:
     """LOTO AUC using only the (few) scale-invariant metrics at each layer."""
     cell = df[(df["graph_scope"] == scope) & (df["normalization"] == normalization)]
     metrics = [m for m in PROBE_METRICS if m in cell.columns]
@@ -275,7 +275,7 @@ def per_layer_probe(df: pd.DataFrame, cond_a: str = "eval", cond_b: str = "deplo
 
 def transfer_test(df: pd.DataFrame, train_pos: str, train_neg: str,
                   test_pos: str, test_neg: str,
-                  scope: str = "task_subgraph", normalization: str = "rw") -> pd.DataFrame:
+                  scope: str = "task_subgraph", normalization: str = "sym") -> pd.DataFrame:
     """Train probe on (train_pos vs train_neg); evaluate AUC on (test_pos vs test_neg).
 
     Positive class is the 'eval-like' frame in each pair. Above-chance transfer ⇒
@@ -321,7 +321,7 @@ def _cos_abs(u: np.ndarray, v: np.ndarray) -> float:
 
 
 def davis_kahan_rotation(fiedler_pkl, cond_a: str = "eval", cond_b: str = "deploy",
-                         scope: str = "task_subgraph", normalization: str = "rw",
+                         scope: str = "task_subgraph", normalization: str = "sym",
                          gap_quantile: float = 0.25, n_perm: int = 1000,
                          seed: int = 0) -> pd.DataFrame:
     """Per (model, layer): matched Fiedler rotation 1-|cosθ|, gap-gated, with a
@@ -399,18 +399,16 @@ def davis_kahan_rotation(fiedler_pkl, cond_a: str = "eval", cond_b: str = "deplo
 
 def run_separability(long_csv, fiedler_pkl, out_dir,
                      cond_a: str = "eval", cond_b: str = "deploy",
-                     scope: str = "task_subgraph", normalization: str = "rw",
+                     scope: str = "task_subgraph", normalization: str = "sym",
                      n_boot: int = 1000, n_perm: int = 1000) -> dict:
     """End-to-end separability suite; writes CSVs, returns the frames."""
-    from .analysis import load_long
+    from .analysis import load_long, require_cell_metadata
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     df = load_long(long_csv)
     if df.empty:
         return {}
-    for col, default in [("graph_scope", "full"), ("normalization", "rw")]:
-        if col not in df.columns:
-            df[col] = default
+    require_cell_metadata(df)
 
     probe = probe_separability(df, cond_a, cond_b, scope, normalization, n_boot, n_perm)
     layer_probe = per_layer_probe(df, cond_a, cond_b, scope, normalization)

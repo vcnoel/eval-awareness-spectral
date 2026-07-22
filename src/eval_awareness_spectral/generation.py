@@ -117,7 +117,7 @@ def run_model_with_generation(
                         "model": rc.name, "hf_id": rc.hf_id, "task_id": p.task_id,
                         "category": p.category, "condition": p.condition, "run": run_idx,
                         "layer": int(d["layer"]), "n_tokens": n_tokens, "stage": "generation",
-                        "st_version": ST_VERSION, "graph_scope": "full", "normalization": "rw",
+                        "st_version": ST_VERSION, "graph_scope": "full", "normalization": "sym",
                     }
                     for m in _GEN_METRICS:
                         row[m] = d.get(m)

@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "source_commit": "4bfd36c39494b5425276de0b893aea969503a49b",
+  "reference_commit": "f80028c4f39fcc0a54f4976897c1cca76a2578dc",
+  "branch": "agent/export-10",
+  "checks": [
+    {"name": "ruff", "status": "pass", "scope": "src tests paper/generate_results_table.py"},
+    {"name": "mypy-python-3.11", "status": "pass", "files": 28},
+    {"name": "mypy-python-3.12", "status": "pass", "files": 28},
+    {"name": "pytest-python-3.11", "status": "pass", "passed": 69, "failed": 0, "seconds": 11.82},
+    {"name": "pytest-python-3.12", "status": "pass", "passed": 69, "failed": 0, "seconds": 14.01},
+    {
+      "name": "registered-correctness-surface-statement-coverage",
+      "status": "pass",
+      "percent": 97.27,
+      "required_percent": 90.0,
+      "modules": [
+        "claims.py",
+        "provenance.py",
+        "data/splits.py",
+        "evaluation/statistics.py",
+        "evaluation/transfer.py",
+        "representations/attention_graph.py",
+        "representations/spectral.py"
+      ]
+    },
+    {"name": "claim-audit", "status": "pass", "files": 10},
+    {"name": "lockfile", "status": "pass", "packages": 90},
+    {"name": "clean-wheel-install", "status": "pass", "wheel_bytes": 128150},
+    {"name": "installed-cli-outside-source", "status": "pass"},
+    {"name": "packaged-schema", "status": "pass"},
+    {"name": "latex", "status": "pass", "pages": 6, "resolved_citations": 9, "engine": "tectonic-0.15.0"},
+    {"name": "workflow-yaml-parse", "status": "pass"},
+    {"name": "shipped-artifact-scan", "status": "pass", "unexpected_artifacts": 0},
+    {"name": "platform-path-scan", "status": "pass", "platform_paths": 0},
+    {"name": "direct-optional-import-scan", "status": "pass", "imports": 0}
+  ],
+  "empirical_execution": {
+    "model_loads": 0,
+    "tokenizer_loads": 0,
+    "dataset_downloads": 0,
+    "inference_calls": 0,
+    "activation_harvests": 0,
+    "generations": 0,
+    "steering_runs": 0,
+    "gpu_jobs": 0,
+    "empirical_results": 0
+  },
+  "residual_risks": [
+    "No artifact-backed empirical study has been run; all scientific outcomes remain planned, conjectural, falsified, or reported-unverified.",
+    "The deprecated legacy empirical runner was not executed; untagged historical diagnostics now fail and affected quantities must be recomputed with the symmetric operator.",
+    "Optional Goodfire, causalab, SGLang, and lm-evaluation callbacks were tested through structural protocols, not live private runtimes.",
+    "Local commands and workflow YAML pass; hosted GitHub Actions remain pending until the draft PR is opened."
+  ]
+}

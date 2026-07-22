@@ -1,9 +1,10 @@
-"""Test Theorem 2 / prediction P4: the graph-frequency spectrum of the frame shift.
+"""Recheck a historically falsified graph-frequency ordering conjecture.
 
-Theorem 2 says Dirichlet-energy metrics suppress a shift in proportion to its graph
-frequency, and mean-pool reads only the DC mode. The sharp prediction P4: a frame is a
-global, slowly-varying influence, so the *pure-confound* shift (deploy→placebo) should
-sit at LOWER graph frequency than the *evaluativeness* shift (deploy→eval).
+A fixed-graph identity says Dirichlet energy weights a shift by graph frequency and
+mean pooling reads an ordinary DC component. It does not imply an ordering between
+empirical cue contrasts. The former code nevertheless proposed that a generic wrapper
+shift should lie below an evaluation-cue shift in frequency; that mechanism was not
+supported and remains a candidate only if explicitly retested.
 
 For each task we run the (position-matched) prompt through the library's analyze_text
 with subgraph_indices (which returns the task-subgraph Laplacian eigenbasis Φ, Λ per
@@ -14,8 +15,9 @@ and summarized by:
   centroid c(Δ) = Σ_k λ_k ‖Δ̂_k‖² / Σ_k ‖Δ̂_k‖²     (mean graph frequency of the shift)
   DC fraction   f_DC(Δ) = ‖Δ̂_0‖² / Σ_k ‖Δ̂_k‖²
 
-P4:  c(eval·deploy) > c(deploy·placebo)   and   f_DC(eval·deploy) < f_DC(deploy·placebo).
-Paired across tasks (Wilcoxon). If it fails, Theorem 2's mechanism is wrong for this data.
+Historical candidate: c(eval−deploy) > c(deploy−placebo) and
+f_DC(eval−deploy) < f_DC(deploy−placebo). A retest is descriptive and cannot upgrade
+the fixed-graph identity into a mechanism.
 
     python -m eval_awareness_spectral.freq_decomp --model llama-3.2-3b-it --tasks 15
 """
@@ -127,7 +129,7 @@ def run(rc: RunConfig, tasks_n: int = 15, layer_lo_frac: float = 0.4) -> pd.Data
 
 
 def summarize(df: pd.DataFrame) -> pd.DataFrame:
-    """Paired per-task test of P4 (average over the late-layer band first)."""
+    """Paired per-task recheck of the historical candidate ordering."""
     if df.empty:
         return pd.DataFrame()
     per_task = df.groupby("task")[["centroid_eval", "centroid_neg", "fdc_eval", "fdc_neg"]].mean()
@@ -165,7 +167,7 @@ def main():
     args = ap.parse_args()
 
     rc = RunConfig(name=args.model, hf_id=args.hf_id, dtype=args.dtype, device="cuda",
-                   cells=[("task_subgraph", "rw")], directed=False, position_match=True,
+                   cells=[("task_subgraph", "sym")], directed=False, position_match=True,
                    output_dir=args.out)
     df = run(rc, tasks_n=args.tasks)
     Path(args.out).mkdir(parents=True, exist_ok=True)
@@ -174,8 +176,11 @@ def main():
     if not summ.empty:
         summ.to_csv(Path(args.out) / f"freq_summary_{args.model}.csv")
         pd.set_option("display.width", 200)
-        print(f"\n===== P4: graph-frequency of the shift ({args.model}, {args.tasks} tasks) =====")
-        print("Theorem 2 predicts: evaluativeness shift is HIGHER graph-frequency than the confound")
+        print(
+            f"\n===== Falsified candidate recheck: graph-frequency shift "
+            f"({args.model}, {args.tasks} tasks) ====="
+        )
+        print("Falsified candidate prediction: eval shift has higher graph frequency than control")
         print(summ.round(4).to_string())
 
 

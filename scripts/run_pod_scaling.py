@@ -113,7 +113,7 @@ def main():
         log.info("========== %s (%s, %.2fB, bf16) ==========", name, family, pb)
         try:
             rc = RunConfig(name=name, hf_id=hf_id, dtype="bfloat16", device="cuda",
-                           conditions=conds, cells=[("task_subgraph", "rw")], directed=False,
+                           conditions=conds, cells=[("task_subgraph", "sym")], directed=False,
                            position_match=True, output_dir=str(out), tasks_path=str(subset),
                            local_files_only=False)  # allow download on the pod
             run_model(rc)  # spectral diagnostics

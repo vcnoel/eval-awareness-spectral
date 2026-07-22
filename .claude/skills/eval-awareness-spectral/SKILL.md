@@ -1,80 +1,54 @@
 ---
 name: eval-awareness-spectral
-description: Run and reason about the eval-awareness spectral experiments in this repo — detecting whether an LLM's internals shift under an evaluation frame vs deployment, on spectral-trust 0.2.2. Use when running the pipeline (spectral sweep, activation baselines, per-metric study, causal steering), interpreting results, or avoiding the known confounds (position/RoPE, filler-amount) and pitfalls.
+description: Design, validate, or interpret evaluation-cue research while keeping environment cue E, recognition R, and behavioral propensity P separate. Use for local manifest validation, spectral comparison design, grouped evaluation, causal follow-up, and claim-safe interpretation.
 ---
 
-# eval-awareness-spectral
+# Evaluation-cue spectral research contract
 
-Instrument: byte-identical tasks wrapped in situational frames (eval / deploy / placebo /
-eval_subtle / control), pushed through `spectral-trust` GSP diagnostics on the **task-token
-subgraph**. Question: does the model represent the *same content* differently when it thinks
-it is being evaluated? Env: conda `gemma_spectral`. Always `PYTHONPATH=src`.
+This repository is pre-results. Do not quote historical metrics, infer outcomes from old module names, or describe a conjecture as observed. No validated empirical artifacts are bundled.
 
-## The one thing to internalize: raw AUC is NOT the headline — selectivity is
+## Start with E, R, and P
 
-Every "eval is decodable" number is partly a shortcut (Clever Hans). Report
-**selectivity** `S = AUC(eval-vs-deploy) − AUC(deploy-vs-placebo)`. The negative control
-(deploy-vs-placebo, both non-evaluative) subtracts shared wording/filler/position. A family
-with high eval-AUC but equally high negative-control AUC is reading a confound, not
-evaluativeness.
+- **E** is an assigned environment-factor vector.
+- **R** is an independently measured recognition endpoint.
+- **P** is a behavioral propensity estimated from outcome-bearing repeated samples.
 
-## Known confounds (in order discovered) — do not regress
+Prompt-only activations can measure sensitivity to E. They do not establish R or P. Avoid belief, awareness, deception, or intent language unless a validated endpoint directly operationalizes the term.
 
-1. **Absolute position / RoPE.** Fixed-length preambles put the task at a condition-specific
-   token index; a 1-feature position probe scores AUC 1.0. Fix: `--position-match` (pad
-   preambles with neutral function-word filler so task-start spread = 0). Verify with the
-   `position_only` baseline → must be ~0.5.
-2. **Filler amount.** Position-matching pads shorter preambles more → high-capacity activation
-   probes still hit 1.0 on the negative control. This is why activations are **not** a clean
-   baseline; use selectivity, and rely on the length-matched **eval-vs-deploy** contrast
-   (both get ~equal filler) as the cleanest.
-3. **Only `smoothness_index` is genuinely selective** (S≈0.10, p≈0.02); entropy/gini are mostly
-   confound; velocity/accel forms hurt selectivity. Curate `smoothness + hfer` (S≈0.16–0.17).
+## Stop-before-inference gate
 
-## Library gotchas (spectral-trust 0.2.2)
+Before any model call, require and locally validate:
 
-- Force `eigen_solver="dense"` — the sparse solver truncates the eigenbasis and corrupts
-  entropy/hfer/energy on graphs >50 nodes.
-- 0.2.2 dropped gini; we recompute `gini_sparsity` from the returned `spectral_masses`.
-- Directed metrics are computed on the FULL adjacency even under `subgraph_indices` — record
-  them only on the `full` scope.
-- Under `--position-match`, the `full`-scope graph is filler-dominated and its degenerate
-  Laplacian STALLS the eigensolver → use the `task_subgraph` cell only (the driver does this).
+1. hashed protocol configuration;
+2. prompt manifest with stable source-task IDs, template families, factor vectors, hashes, tokenizer revision, task spans, and splits;
+3. group-and-template-isolated confirmation split;
+4. exact model/tokenizer and adapter revisions;
+5. gold endpoint or a frozen judge-validation plan for R/P;
+6. artifact destination reserved by configuration hash;
+7. preregistered contrasts, controls, fitting procedure, statistics, sign-of-life threshold, and stop rules.
 
-## Pitfalls that already bit us
+If any item is absent, stop before inference. Do not repair missing provenance by guessing after a run.
 
-- **Windows cp1252 console** crashes on unicode (−, ×, ↔). Keep prints ASCII / reconfigure stdout.
-- **Task-span reconcile:** position-matching perturbs the task's boundary token in the bare
-  `control` template → keep the majority tokenization, drop only outlier frames (`reconcile_task_spans`).
-- **Causal steering magnitude:** a raw diff-of-means α breaks generation uniformly. Steer
-  **norm-relative** (`α · ‖h‖ · unit_dir`), dose-response α∈{0,.25,.5,1,2}, fluency guard, and
-  placebo+random direction controls. Optionally rank-k SVD-denoise the direction.
+## Spectral method
 
-## Commands
+Use the symmetric-normalized Laplacian for basis-dependent analysis. Its Euclidean-orthonormal null mode is degree weighted. Reject categorical random-walk basis requests; random-walk right eigenvectors are not generally an orthonormal Fourier basis. The combinatorial operator is permitted for a labeled fixed-graph ordinary-DC comparison.
 
-```bash
-conda activate gemma_spectral; export PYTHONPATH=src   # (PowerShell: $env:PYTHONPATH="src")
+Declare every analysis as graph-only, fixed-reference-signal, or joint graph-and-signal. Do not compare unaligned coefficients from condition-specific bases. Use orientation-invariant paired measures for eigenvectors and learned directions.
 
-# Core spectral sweep + analysis (eval vs deploy):
-python -m eval_awareness_spectral.cli run --model llama-3.2-3b-it --analyze
-python -m eval_awareness_spectral.cli run --analyze --cond-b placebo   # evaluativeness contrast
+## Evaluation method
 
-# Full experiment driver (spectral + activation baselines + per-metric + causal):
-python scripts/run_experiments.py --tasks 15 --position-match --fresh   # confound-hardened
-python scripts/run_experiments.py --tasks 15 --position-match --skip-battery  # skip slow act_full perms
+Group by source task and template family. Fit normalization, dimension reduction, layer/feature selection, direction orientation, and hyperparameters inside nested training folds. Complete-pipeline permutations must rerun those choices. Report both target and nuisance-control performance alongside paired selectivity.
 
-# Per-metric information & complementarity study:
-python -m eval_awareness_spectral.metric_study results/<run>/<model> 500
-```
+Required alternatives include position, length, filler, tokenizer boundaries, lexical template, condition valence, task difficulty, residual norm, ordinary DC/AC, degree-weighted null/perpendicular content, graph-only effects, and value/output controls. Transfer claims require genuinely disjoint task, template, model-family, or endpoint groups.
 
-`--skip-battery` avoids the slow `act_full` (89k-dim) permutation nulls, which are the usual
-run-time sink. Results/figures/pkls are gitignored.
+Scaling language requires repeated sizes within multiple families, multiple task families, hierarchical estimation, and leave-one-family-out sensitivity. A checkpoint trend is a candidate observation only.
 
-## Modules
+## Causal follow-up
 
-`prompts.py` frames + position-matching · `spans.py` task-span location + reconcile ·
-`runner.py` spectral sweep (cells = scope×normalization) · `activations.py` residual pooling +
-moments · `baselines.py` feature-family ladder + selectivity · `metric_study.py` per-metric ×
-form decomposition · `separability.py` probe / transfer / Davis-Kahan · `causal.py` norm-relative
-steering · `plots.py` · `cli.py` · `scripts/run_experiments.py` driver. Design rationale in
-`docs/experiment_design.md`.
+Intervene only after an observational validation sign of life and endpoint validation. Derive targets on training data. Include random, placebo, off-target, matched-norm, dose, quality, and scorer controls. State whether evidence addresses sufficiency, necessity, or mediation; none establishes intent.
+
+## Outputs and claims
+
+Write atomic, checksummed artifacts and a result manifest recording config, splits, revisions, seeds, environment, raw endpoints, fold fits, metrics, failures, and interventions. Run release validation offline and without inference. Promote an empirical sentence only when its claim-ledger entry links to a validated manifest. Otherwise label it planned, conjecture, falsified, or reported-unverified.
+
+Primary references: [README](../../../README.md), [protocol](../../../docs/future-experiment-protocol.md), [mathematics](../../../docs/mathematical-notes.md), and [candidate conjectures](../../../docs/laws.md).

@@ -28,7 +28,7 @@ from typing import List, Tuple
 import numpy as np
 import pandas as pd
 
-from .analysis import PRIMARY_METRICS, load_long
+from .analysis import PRIMARY_METRICS, load_long, require_cell_metadata
 from .separability import TRAJECTORY_STATS, _trajectory, _loto_scores, _auc, probe_matrix
 
 # A metric can be USED several ways along the depth axis: its static profile, its
@@ -157,14 +157,12 @@ def combination_study(df, scope, norm, n_perm=1000) -> Tuple[pd.DataFrame, pd.Da
     return pairs, pd.DataFrame(path)
 
 
-def run(results_model_dir, scope="task_subgraph", norm="rw", n_perm=1000) -> dict:
+def run(results_model_dir, scope="task_subgraph", norm="sym", n_perm=1000) -> dict:
     d = Path(results_model_dir)
     df = load_long(d / "diagnostics_long.csv")
     if df.empty:
         print("no diagnostics found at", d); return {}
-    for col, default in [("graph_scope", "full"), ("normalization", "rw")]:
-        if col not in df.columns:
-            df[col] = default
+    require_cell_metadata(df)
 
     pm = per_metric_table(df, scope, norm, n_perm)
     pl = per_layer_map(df, scope, norm)

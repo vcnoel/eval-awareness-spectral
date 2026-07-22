@@ -1,0 +1,90 @@
+name: CPU protocol and manuscript
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+env:
+  CUDA_VISIBLE_DEVICES: ""
+  HF_HUB_OFFLINE: "1"
+  TRANSFORMERS_OFFLINE: "1"
+  WANDB_MODE: "disabled"
+
+jobs:
+  python:
+    name: Python ${{ matrix.python-version }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - name: Frozen environment
+        run: uv sync --frozen --extra dev
+      - name: Lint
+        run: uv run ruff check src tests paper/generate_results_table.py
+      - name: Types
+        run: uv run mypy src/eval_awareness_spectral
+      - name: Correctness-critical statement coverage
+        run: uv run pytest --cov=eval_awareness_spectral --cov-report=term-missing
+      - name: Claim provenance
+        run: uv run eval-awareness-spectral claim-audit --ledger paper/claim_ledger.json README.md docs/*.md main.tex
+      - name: Configuration and packaged schema
+        run: |
+          uv run eval-awareness-spectral validate-config configs/protocol.example.json
+          uv run eval-awareness-spectral schema > /tmp/results_manifest.schema.json
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          packaged = json.loads(Path('/tmp/results_manifest.schema.json').read_text())
+          paper = json.loads(Path('paper/results_manifest.schema.json').read_text())
+          assert packaged == paper
+          PY
+
+  wheel:
+    name: Clean wheel installation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: astral-sh/setup-uv@v6
+      - run: uv build --wheel
+      - name: Install and validate outside source tree
+        shell: bash
+        run: |
+          wheel="$(readlink -f dist/*.whl)"
+          temp="$(mktemp -d)"
+          python -m venv "$temp/venv"
+          "$temp/venv/bin/pip" install "$wheel"
+          cd "$temp"
+          "$temp/venv/bin/eval-awareness-spectral" --help
+          "$temp/venv/bin/eval-awareness-spectral" schema > schema.json
+          "$temp/venv/bin/eval-awareness-spectral" validate-config "$GITHUB_WORKSPACE/configs/protocol.example.json"
+          "$temp/venv/bin/python" -c "from eval_awareness_spectral.claims import packaged_results_schema; assert packaged_results_schema()['properties']['schema_version']['const'] == 1"
+
+  manuscript:
+    name: Pre-results manuscript
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: xu-cheng/latex-action@v4
+        with:
+          root_file: main.tex
+          latexmk_use_xelatex: false
+          args: -pdf -file-line-error -halt-on-error -interaction=nonstopmode
+      - name: Citations and unresolved references
+        run: |
+          test -s main.pdf
+          ! grep -E 'Citation.*undefined|Reference.*undefined|There were undefined references' main.log

@@ -1,0 +1,9 @@
+{
+  "schema_version": 1,
+  "starting_commit": "4bfd36c39494b5425276de0b893aea969503a49b",
+  "tracked_empirical_artifacts": [],
+  "empirical_artifacts_present": false,
+  "audit_scope": ["README.md", "docs/", ".claude/skills/", "main.tex"],
+  "decision": "pre-results manuscript required",
+  "empirical_execution_allowed": false
+}
