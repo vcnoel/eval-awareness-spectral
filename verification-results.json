@@ -1,7 +1,7 @@
 {
   "schema_version": 2,
   "base_commit": "27cf2420bececeff902ba91df58ac4e4fa3a854a",
-  "verified_export_commit": "cbc3a3bb63420e20e5ed53c3c7d54597a6173ccb",
+  "verified_export_commit": "22ddbe45996d52e32c850fcbf6e05949bd3f5fc9",
   "branch": "agent/export-12",
   "checks": [
     {"name": "ruff-python-3.11", "status": "pass", "scope": "src tests paper/generate_results_table.py scripts/build_resource_accounting.py"},
@@ -46,7 +46,10 @@
     "issues_opened": 0,
     "issue_packets": 3,
     "manual_issue_links": 3,
-    "draft_pr_state": "pending code review and push"
+    "branch_pushed": true,
+    "branch_url": "https://github.com/vcnoel/eval-awareness-spectral/tree/agent/export-12",
+    "draft_pr_state": "manual creation required: GitHub CLI has no API authentication",
+    "draft_pr_create_url": "https://github.com/vcnoel/eval-awareness-spectral/compare/main...agent/export-12?expand=1"
   },
   "residual_risks": [
     "The repetition detector is deliberately conservative and can miss irregular semantic loops whose repeated token mass or rolling n-gram coverage stays below threshold.",

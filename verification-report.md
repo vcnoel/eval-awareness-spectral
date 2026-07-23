@@ -89,7 +89,7 @@ The standalone resource HTML parses with one `h1`, two complete tables, and no r
 
 The tracked patch contains no Lab-local path, secret, model artifact, scheduler command, GPU request, model/tokenizer load, dataset download, or inference call. The current export used zero scheduler jobs and zero GPU-seconds.
 
-The export environment has git push authorization for the approved target but no authenticated GitHub issue API. No upstream issue was opened; complete bodies and direct manual-creation links are in [`docs/upstream-issues/`](docs/upstream-issues/). Draft-PR delivery remains pending until the reviewed branch is pushed.
+The verified branch is pushed to [`agent/export-12`](https://github.com/vcnoel/eval-awareness-spectral/tree/agent/export-12). Git push authorization works, but GitHub CLI has no API authentication, so it cannot open a draft PR or the three upstream issues. Create the draft PR from the [preselected main-to-export comparison](https://github.com/vcnoel/eval-awareness-spectral/compare/main...agent/export-12?expand=1). Complete upstream issue bodies and direct manual-creation links are in [`docs/upstream-issues/`](docs/upstream-issues/).
 
 ## Residual risks
 
