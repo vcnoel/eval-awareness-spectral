@@ -20,7 +20,7 @@ The source experiment was read only. The export rewrites the termination logic a
 - Final spans distinguish EOS before close, close with empty final, cap after partial final, loop after close, missing close, and valid final.
 - Nonterminal generated tokens stay one-to-one with selected activation indices for every termination reason.
 - Online detection is deterministic over one unpadded row and rejects multi-row batches rather than globally stopping unrelated rows.
-- Legacy decoding arguments are unchanged by default. Online stopping is available only through the explicit `--stop-repetition` flag; causal and benchmark paths classify post hoc.
+- Legacy decoding arguments are unchanged by default. Online stopping is available only through the explicit `--stop-repetition` flag; causal and benchmark paths classify post hoc. The historical eight-token verbalized-judge cap is configurable through `judge_max_new_tokens` and warns when it yields no eligible rows.
 - Historical files without termination metadata are not retroactively reinterpreted.
 
 ## Reproduction check
@@ -43,7 +43,7 @@ uv run --isolated --python 3.11 --extra dev \
   pytest --cov=eval_awareness_spectral --cov-report=term-missing -q
 ```
 
-Pass: Ruff clean, strict mypy clean across 29 source files, 98 tests and zero failures in 13.17 seconds. Registered statement coverage is 96.42% against a 90% gate.
+Pass after the approved review edits: Ruff clean, strict mypy clean across 29 source files, 98 tests and zero failures in 11.82 seconds. Registered statement coverage is 96.42% against a 90% gate.
 
 ### Python 3.12
 
@@ -55,7 +55,7 @@ uv run --isolated --python 3.12 --extra dev \
   pytest --cov=eval_awareness_spectral --cov-report=term-missing -q
 ```
 
-Pass: Ruff clean, strict mypy clean across 29 source files, 98 tests and zero failures in 14.04 seconds. The same registered surface reaches 96.42% statement coverage.
+Pass after the approved review edits: Ruff clean, strict mypy clean across 29 source files, 98 tests and zero failures in 13.85 seconds. The same registered surface reaches 96.42% statement coverage.
 
 ### Arithmetic, claims, and lock
 
@@ -81,7 +81,7 @@ cd "$TEMP"
 "$TEMP/venv/bin/eval-awareness-spectral" validate-config "$CHECKOUT/configs/protocol.example.json"
 ```
 
-Pass outside the source tree. The wheel is 135,369 bytes. The public termination API imports and classifies secondary EOS correctly. Import inspection confirms that `torch`, `transformers`, `datasets`, `spectral_trust`, `goodfire_core`, `causalab`, `sglang`, and `lm_eval` are not loaded.
+Pass outside the source tree. The wheel is 135,568 bytes. The public termination API imports and classifies secondary EOS correctly. Import inspection confirms that `torch`, `transformers`, `datasets`, `spectral_trust`, `goodfire_core`, `causalab`, `sglang`, and `lm_eval` are not loaded.
 
 ### Report, delivery, and repository scans
 
@@ -95,6 +95,7 @@ The export environment has git push authorization for the approved target but no
 
 - The detector is deliberately conservative. It can miss irregular semantic loops below the repeated-mass or rolling-coverage thresholds.
 - The online stopping adapter was tested through its dependency-free callable contract, not a live Transformers model, because model and tokenizer loading were prohibited.
+- The verbalized baseline's historical eight-token default can yield no eligible rows on models that do not terminate promptly; new runs must raise and record `judge_max_new_tokens` rather than scoring capped text.
 - Historical outputs lacking termination metadata still require repository-specific cap and repetition audits.
 - The three upstream issues require manual creation in an authenticated GitHub session.
 - The actual RU/H100-hour conversion remains unidentified; the report supplies only an explicit over-attribution ceiling.

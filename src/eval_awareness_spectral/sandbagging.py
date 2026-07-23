@@ -173,12 +173,17 @@ _VERBALIZED = (
 )
 
 
-def run_verbalized_baseline(rc: RunConfig, n_tasks: int = 15, out_dir: Optional[str] = None) -> pd.DataFrame:
+def run_verbalized_baseline(rc: RunConfig, n_tasks: int = 15, out_dir: Optional[str] = None,
+                            judge_max_new_tokens: int = 8) -> pd.DataFrame:
     """Black-box baseline: show the model each framed prompt and ask eval-or-deploy.
 
     AUC of the model's own EVAL/DEPLOY judgement against the true frame label — the
     standard verbalized eval-awareness measure to compare the spectral probe against.
+    The historical eight-token cap remains the default, but callers may raise it when
+    their model does not emit a declared terminal within eight tokens.
     """
+    if judge_max_new_tokens < 1:
+        raise ValueError("judge_max_new_tokens must be positive")
     from .prompts import load_tasks
     tasks = load_tasks(rc.tasks_path)[:n_tasks]
     framings = load_framings(rc.framings_path)
@@ -193,7 +198,7 @@ def run_verbalized_baseline(rc: RunConfig, n_tasks: int = 15, out_dir: Optional[
             # ask the JUDGE (same model) about the framed prompt's likely origin
             judge_msg = [{"role": "user", "content": _VERBALIZED.format(prompt=p.text[:1500])}]
             jt = tok.apply_chat_template(judge_msg, tokenize=False, add_generation_prompt=True)
-            resp, termination = _gen(framework, jt, max_new_tokens=8)
+            resp, termination = _gen(framework, jt, max_new_tokens=judge_max_new_tokens)
             resp = resp.upper()
             eligible = bool(termination["termination_scoring_eligible"])
             says_eval = int("EVAL" in resp and "DEPLOY" not in resp) if eligible else None
@@ -209,13 +214,20 @@ def run_verbalized_baseline(rc: RunConfig, n_tasks: int = 15, out_dir: Optional[
         except ValueError:
             auc = np.nan
         acc = float((eligible.judge_says_eval == y).mean()) if len(eligible) else np.nan
+        if not len(eligible):
+            logger.warning(
+                "Verbalized baseline has no scoring-eligible rows at max_new_tokens=%d; "
+                "raise judge_max_new_tokens rather than scoring capped responses",
+                judge_max_new_tokens,
+            )
         logger.info("Verbalized baseline: AUC=%.3f acc=%.3f (N=%d eligible of %d)",
                     auc, acc, len(eligible), len(df))
         if out_dir:
             Path(out_dir).mkdir(parents=True, exist_ok=True)
             df.to_csv(Path(out_dir) / "verbalized_baseline.csv", index=False)
             pd.DataFrame([{"model": rc.name, "verbalized_auc": auc, "verbalized_acc": acc,
-                           "n": len(df), "n_scoring_eligible": len(eligible)}]).to_csv(
+                           "n": len(df), "n_scoring_eligible": len(eligible),
+                           "judge_max_new_tokens": judge_max_new_tokens}]).to_csv(
                 Path(out_dir) / "verbalized_summary.csv", index=False)
     _free_cuda()
     return df

@@ -21,7 +21,7 @@ For the original 1,280-rollout, non-thinking factor design at the measured 33.47
 |---:|---:|---:|
 | 64 | 0.6799 | 38.92 |
 | 128 | 1.3597 | 77.83 |
-| 256 | 2.7194 | 155.70 |
+| 256 | 2.7194 | 155.67 |
 
 No lower or central RU/H100-hour estimate is defensible from these records.
 

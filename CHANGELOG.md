@@ -7,6 +7,7 @@
 - Added a dependency-free, typed generation contract that preserves scalar or sequence-valued model terminal IDs and tokenizer fallbacks.
 - Added structured termination, conservative online and post-hoc repetition detection, reasoning/final span parsing, scoring eligibility, and generated-token activation alignment.
 - Added an explicit opt-in online stopper for the sampled legacy path; causal and benchmark paths keep decoding unchanged and classify validity post hoc.
+- Kept the historical eight-token verbalized-judge cap while exposing `judge_max_new_tokens` and warning when it yields no scoring-eligible rows.
 - Added a checksum-addressed compact regression fixture derived from the Qwen3-0.6B 4,096-token loop and negative controls for legitimate repetitive output.
 - Historical outputs without termination provenance remain uncertified and are not reinterpreted.
 

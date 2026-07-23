@@ -142,7 +142,7 @@
     "rows": [
       {"token_cap": 64, "h100_hours": 0.6799, "ru_at_ceiling": 38.92},
       {"token_cap": 128, "h100_hours": 1.3597, "ru_at_ceiling": 77.83},
-      {"token_cap": 256, "h100_hours": 2.7194, "ru_at_ceiling": 155.7}
+      {"token_cap": 256, "h100_hours": 2.7194, "ru_at_ceiling": 155.6659}
     ]
   },
   "missing_categories": [

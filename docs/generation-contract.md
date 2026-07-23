@@ -63,4 +63,6 @@ The fixture proves a software property only. It does not repair, rerun, reinterp
 
 The deprecated `generation`, `causal`, and `sandbagging` paths append termination provenance after `model.generate`. Their decoding arguments remain unchanged. The sampled generation path alone exposes `--stop-repetition`; causal steering, benchmark scoring, and verbalized-judge paths use post-hoc classification so the classifier does not silently alter the historical generation distribution.
 
+The verbalized baseline keeps its historical eight-token judge cap but exposes `judge_max_new_tokens` for new runs. If no response reaches a declared terminal, the baseline warns and reports zero eligible rows instead of scoring capped text; callers should raise the cap and record it.
+
 New scoring excludes rows whose termination assessment is ineligible. Existing CSVs that lack termination metadata remain historical records, not certified completions. Audit cap hits and repetition by condition before reusing their scores.

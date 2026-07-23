@@ -8,8 +8,8 @@
     {"name": "ruff-python-3.12", "status": "pass", "scope": "src tests paper/generate_results_table.py scripts/build_resource_accounting.py"},
     {"name": "mypy-python-3.11", "status": "pass", "files": 29},
     {"name": "mypy-python-3.12", "status": "pass", "files": 29},
-    {"name": "pytest-python-3.11", "status": "pass", "passed": 98, "failed": 0, "seconds": 13.17},
-    {"name": "pytest-python-3.12", "status": "pass", "passed": 98, "failed": 0, "seconds": 14.04},
+    {"name": "pytest-python-3.11", "status": "pass", "passed": 98, "failed": 0, "seconds": 11.82},
+    {"name": "pytest-python-3.12", "status": "pass", "passed": 98, "failed": 0, "seconds": 13.85},
     {
       "name": "registered-correctness-surface-statement-coverage",
       "status": "pass",
@@ -21,7 +21,7 @@
     {"name": "resource-accounting", "status": "pass", "qwen_h100_seconds": 14427, "unavailable_roots": 8},
     {"name": "claim-audit", "status": "pass", "files": 16},
     {"name": "lockfile", "status": "pass", "packages": 90},
-    {"name": "clean-wheel-install", "status": "pass", "wheel_bytes": 135369},
+    {"name": "clean-wheel-install", "status": "pass", "wheel_bytes": 135568},
     {"name": "installed-public-api-outside-source", "status": "pass"},
     {"name": "packaged-schema-and-cli", "status": "pass"},
     {"name": "resource-accounting-html", "status": "pass", "h1": 1, "tables": 2},
@@ -51,6 +51,7 @@
   "residual_risks": [
     "The repetition detector is deliberately conservative and can miss irregular semantic loops whose repeated token mass or rolling n-gram coverage stays below threshold.",
     "The online stopping adapter was verified through a dependency-free callable contract, not a live Transformers model, because model and tokenizer loading were prohibited.",
+    "The verbalized baseline's historical eight-token default can yield no eligible rows on models that do not terminate promptly; new runs must raise and record judge_max_new_tokens rather than score capped text.",
     "Historical outputs that lack terminal metadata cannot be certified retroactively; repository-specific cap and repetition audits remain necessary.",
     "The three upstream issues require manual creation because no authenticated GitHub issue API was available in the export environment.",
     "The RU/H100-hour value is only an over-attribution ceiling; the actual billing conversion remains unidentified."
