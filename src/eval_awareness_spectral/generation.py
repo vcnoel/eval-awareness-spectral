@@ -21,6 +21,10 @@ from tqdm import tqdm
 
 from spectral_trust import GSPDiagnosticsFramework
 
+from .generation_contract import (
+    SingleSequenceRepetitionStoppingCriteria,
+    assess_generation,
+)
 from .prompts import Condition, Task, build_prompts, load_framings, load_tasks
 from .runner import ST_VERSION, RunConfig, _free_cuda, _gsp_config
 
@@ -44,26 +48,58 @@ def _looks_like_refusal(text: str) -> bool:
 
 
 @torch.no_grad()
-def _generate(framework, prompt_text: str, max_new_tokens: int, temperature: float) -> str:
+def _generate(
+    framework,
+    prompt_text: str,
+    max_new_tokens: int,
+    temperature: float,
+    *,
+    stop_repetition: bool = False,
+) -> tuple[str, dict]:
+    """Generate with unchanged legacy sampling and attach validity provenance.
+
+    Online repetition stopping is opt-in because it changes the generated sequence.
+    Post-hoc classification is always active and never changes decoding.
+    """
     tok = framework.instrumenter.tokenizer
     model = framework.instrumenter.model
     inputs = tok(prompt_text, return_tensors="pt").to(model.device)
     do_sample = temperature and temperature > 0
-    gen = model.generate(
-        **inputs,
-        max_new_tokens=max_new_tokens,
-        do_sample=do_sample,
-        temperature=temperature if do_sample else None,
-        pad_token_id=tok.pad_token_id or tok.eos_token_id,
-    )
+    kwargs = {
+        "max_new_tokens": max_new_tokens,
+        "do_sample": do_sample,
+        "temperature": temperature if do_sample else None,
+        "pad_token_id": tok.pad_token_id or tok.eos_token_id,
+    }
+    stopper = None
+    if stop_repetition:
+        from transformers import StoppingCriteriaList
+
+        stopper = SingleSequenceRepetitionStoppingCriteria(
+            prompt_length=int(inputs["input_ids"].shape[1])
+        )
+        kwargs["stopping_criteria"] = StoppingCriteriaList([stopper])
+    gen = model.generate(**inputs, **kwargs)
     new_tokens = gen[0][inputs["input_ids"].shape[1]:]
-    return tok.decode(new_tokens, skip_special_tokens=True).strip()
+    token_ids = [int(value) for value in new_tokens.tolist()]
+    assessment = assess_generation(
+        token_ids,
+        generation_config=getattr(model, "generation_config", None),
+        tokenizer=tok,
+        generated_cap=max_new_tokens,
+        loop=stopper.result if stopper is not None else None,
+        mode="online" if stop_repetition else "post_hoc",
+    )
+    text = tok.decode(new_tokens, skip_special_tokens=True).strip()
+    return text, assessment.provenance_dict()
 
 
 def run_model_with_generation(
     rc: RunConfig,
     max_new_tokens: int = 160,
     temperature: float = 0.7,
+    *,
+    stop_repetition: bool = False,
 ) -> pd.DataFrame:
     """For each (task, condition, run): generate a response, then analyze
     prompt+response spectrally. Returns long-format diagnostics plus the
@@ -87,7 +123,13 @@ def run_model_with_generation(
         for run_idx in range(rc.runs):
             for p in tqdm(prompts, desc=f"{rc.name} gen run {run_idx}", leave=False):
                 try:
-                    response = _generate(framework, p.text, max_new_tokens, temperature)
+                    response, termination = _generate(
+                        framework,
+                        p.text,
+                        max_new_tokens,
+                        temperature,
+                        stop_repetition=stop_repetition,
+                    )
                 except Exception as e:
                     logger.error("generate failed (%s/%s/%s): %s",
                                  rc.name, p.task_id, p.condition, e)
@@ -108,6 +150,7 @@ def run_model_with_generation(
                     "response_chars": len(response),
                     "response_words": len(response.split()),
                     "refusal_heuristic": _looks_like_refusal(response),
+                    **termination,
                 })
 
                 n_tokens = len(result["tokens"])

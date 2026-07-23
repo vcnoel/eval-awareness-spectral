@@ -1,0 +1,163 @@
+{
+  "schema_version": 1,
+  "scope": {
+    "finding": "resource accounting only; no evaluation-awareness scientific claim",
+    "source_experiment_eid": "exp_01ky5kxdbgfvt8rhn7d03hs4ca",
+    "source_ledger": "data/resource_accounting/qwen_gpu_usage_ledger.csv",
+    "source_ledger_sha256": "86ff675bf48afe3287105ffd1d71c318773c4ff70f44ddaf03876738c00aa125",
+    "source_ledger_artifact": "/srv/silico-state/_shared/silico/experiments/exp_01ky5kxdbgfvt8rhn7d03hs4ca/worktree/experiments/experiment-11/results/gpu_usage_ledger.csv"
+  },
+  "grant": {
+    "allocation_ru": 250.0,
+    "remaining_ru": 20.6,
+    "consumed_ru": 229.4,
+    "balance_source": "researcher-reported",
+    "durable_opening_and_closing_balance_available": false
+  },
+  "experiments": [
+    {
+      "experiment_eid": "exp_01ky5kxdbgfvt8rhn7d03hs4ca",
+      "artifact_root": "artifact://devoteam-069866/experiments/exp_01ky5kxdbgfvt8rhn7d03hs4ca/",
+      "accelerator_usage_status": "measured",
+      "accelerator_type": "H100",
+      "accelerator_count_per_job": 1,
+      "gpu_seconds": 14427,
+      "gpu_hours": 4.0075,
+      "ru_charge": null,
+      "note": "Per-job ledger covers completed, failed-timeout, and cancelled calibration jobs; no RU charge record survives."
+    },
+    {
+      "experiment_eid": "exp_01kxp8428pe5xbjehq788cmrz5",
+      "artifact_root": "artifact://devoteam-069866/experiments/exp_01kxp8428pe5xbjehq788cmrz5/",
+      "accelerator_usage_status": "unavailable",
+      "accelerator_type": null,
+      "accelerator_count_per_job": null,
+      "gpu_seconds": null,
+      "gpu_hours": null,
+      "ru_charge": null,
+      "note": "Scientific outputs survive; no durable per-job accelerator or RU ledger was identified."
+    },
+    {
+      "experiment_eid": "exp_01kxpfhhy7fkpvmetpg6v2hrka",
+      "artifact_root": "artifact://devoteam-069866/experiments/exp_01kxpfhhy7fkpvmetpg6v2hrka/",
+      "accelerator_usage_status": "unavailable",
+      "accelerator_type": null,
+      "accelerator_count_per_job": null,
+      "gpu_seconds": null,
+      "gpu_hours": null,
+      "ru_charge": null,
+      "note": "Scientific outputs survive; no durable per-job accelerator or RU ledger was identified."
+    },
+    {
+      "experiment_eid": "exp_01kxpgv707fp68vvyttwd8ke11",
+      "artifact_root": "artifact://devoteam-069866/experiments/exp_01kxpgv707fp68vvyttwd8ke11/",
+      "accelerator_usage_status": "unavailable",
+      "accelerator_type": null,
+      "accelerator_count_per_job": null,
+      "gpu_seconds": null,
+      "gpu_hours": null,
+      "ru_charge": null,
+      "note": "A contrast shard records a six-hour wall-limit failure, but accelerator type, count, billed seconds, and RU charge are absent, so it cannot be converted to H100-hours."
+    },
+    {
+      "experiment_eid": "exp_01kxq137dhfxb9jq9ea2hv0p2z",
+      "artifact_root": "artifact://devoteam-069866/experiments/exp_01kxq137dhfxb9jq9ea2hv0p2z/",
+      "accelerator_usage_status": "unavailable",
+      "accelerator_type": null,
+      "accelerator_count_per_job": null,
+      "gpu_seconds": null,
+      "gpu_hours": null,
+      "ru_charge": null,
+      "note": "Scientific outputs survive; no durable per-job accelerator or RU ledger was identified."
+    },
+    {
+      "experiment_eid": "exp_01kxq9hkt0ftm8mt7en2v5zzvd",
+      "artifact_root": "artifact://devoteam-069866/experiments/exp_01kxq9hkt0ftm8mt7en2v5zzvd/",
+      "accelerator_usage_status": "unavailable",
+      "accelerator_type": null,
+      "accelerator_count_per_job": null,
+      "gpu_seconds": null,
+      "gpu_hours": null,
+      "ru_charge": null,
+      "note": "Scientific outputs survive; no durable per-job accelerator or RU ledger was identified."
+    },
+    {
+      "experiment_eid": "exp_01kxqn25bzf3daw7sk7zqfty0z",
+      "artifact_root": "artifact://devoteam-069866/experiments/exp_01kxqn25bzf3daw7sk7zqfty0z/",
+      "accelerator_usage_status": "unavailable",
+      "accelerator_type": null,
+      "accelerator_count_per_job": null,
+      "gpu_seconds": null,
+      "gpu_hours": null,
+      "ru_charge": null,
+      "note": "Scientific outputs survive; no durable per-job accelerator or RU ledger was identified."
+    },
+    {
+      "experiment_eid": "exp_01kxqssmngf8h90nhdmpbt61yr",
+      "artifact_root": "artifact://devoteam-069866/experiments/exp_01kxqssmngf8h90nhdmpbt61yr/",
+      "accelerator_usage_status": "unavailable",
+      "accelerator_type": null,
+      "accelerator_count_per_job": null,
+      "gpu_seconds": null,
+      "gpu_hours": null,
+      "ru_charge": null,
+      "note": "Scientific outputs survive; no durable per-job accelerator or RU ledger was identified."
+    },
+    {
+      "experiment_eid": "exp_01kxr596b0e1qvaeg1yzjvpgnc",
+      "artifact_root": "artifact://devoteam-069866/experiments/exp_01kxr596b0e1qvaeg1yzjvpgnc/",
+      "accelerator_usage_status": "unavailable",
+      "accelerator_type": null,
+      "accelerator_count_per_job": null,
+      "gpu_seconds": null,
+      "gpu_hours": null,
+      "ru_charge": null,
+      "note": "Scientific outputs survive; no durable per-job accelerator or RU ledger was identified."
+    },
+    {
+      "experiment_eid": "exp_01ky70vc2yew9r7bzn1vr8fyr9",
+      "artifact_root": null,
+      "accelerator_usage_status": "measured-zero",
+      "accelerator_type": null,
+      "accelerator_count_per_job": 0,
+      "gpu_seconds": 0,
+      "gpu_hours": 0.0,
+      "ru_charge": null,
+      "note": "CPU-only code export and artifact preparation; no scheduler or accelerator job was launched."
+    }
+  ],
+  "derived": {
+    "documented_only_attribution_ceiling_ru_per_h100_hour": 57.2427,
+    "ceiling_definition": "all 229.4 consumed RU divided by the only documented 4.0075 H100-hours",
+    "is_billing_rate": false,
+    "remaining_h100_hours_at_ceiling": 0.3599,
+    "remaining_h100_minutes_at_ceiling": 21.59,
+    "actual_ru_per_h100_hour": null,
+    "identifiability": "unidentified because other GPU and non-GPU RU consumption is unmeasured"
+  },
+  "rollout_projections": {
+    "rollouts": 1280,
+    "measured_tokens_per_second": 33.4714,
+    "assumption": "every rollout reaches the cap; one H100; generation time only",
+    "rows": [
+      {"token_cap": 64, "h100_hours": 0.6799, "ru_at_ceiling": 38.92},
+      {"token_cap": 128, "h100_hours": 1.3597, "ru_at_ceiling": 77.83},
+      {"token_cap": 256, "h100_hours": 2.7194, "ru_at_ceiling": 155.7}
+    ]
+  },
+  "missing_categories": [
+    "per-job GPU type and count",
+    "billed versus wall-clock seconds",
+    "failed, cancelled, and image-import charges",
+    "CPU, judge, storage, and orchestration RU categories",
+    "experiment-level RU aggregation",
+    "durable opening and closing RU balances"
+  ],
+  "recommendations": [
+    "mandatory durable resource_usage.json per experiment",
+    "per-job ledger keyed by job ID and experiment EID",
+    "live RU balance and cap controls",
+    "planned-versus-actual reporting",
+    "billing exports available in the Lab"
+  ]
+}

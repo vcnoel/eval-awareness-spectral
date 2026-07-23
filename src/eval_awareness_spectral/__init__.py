@@ -10,6 +10,22 @@ from importlib import import_module
 from typing import Any
 
 from .config import ProtocolConfig, load_config
+from .generation_contract import (
+    FinalParseState,
+    FinalSpan,
+    GenerationAssessment,
+    GenerationRecord,
+    RepetitionDetector,
+    RepetitionResult,
+    SingleSequenceRepetitionStoppingCriteria,
+    TerminalIds,
+    TerminationReason,
+    TerminationResult,
+    assess_generation,
+    detect_repetition,
+    normalize_terminal_ids,
+    parse_final_span,
+)
 from .schemas import (
     CacheConflictError,
     ClaimStatus,
@@ -19,17 +35,31 @@ from .schemas import (
     ValidationError,
 )
 
-__version__ = "0.2.0"
+__version__ = "0.3.0"
 
 __all__ = [
     "CacheConflictError",
     "ClaimStatus",
+    "FinalParseState",
+    "FinalSpan",
+    "GenerationAssessment",
+    "GenerationRecord",
     "IncompleteRunError",
     "ProtocolConfig",
     "ProtocolError",
+    "RepetitionDetector",
+    "RepetitionResult",
+    "SingleSequenceRepetitionStoppingCriteria",
     "SpectralComparisonMode",
+    "TerminalIds",
+    "TerminationReason",
+    "TerminationResult",
     "ValidationError",
+    "assess_generation",
+    "detect_repetition",
     "load_config",
+    "normalize_terminal_ids",
+    "parse_final_span",
 ]
 
 _LEGACY_EXPORTS = {

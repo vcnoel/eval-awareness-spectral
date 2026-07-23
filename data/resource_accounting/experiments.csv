@@ -1,0 +1,11 @@
+experiment_eid,artifact_root,accelerator_usage_status,accelerator_type,accelerator_count_per_job,gpu_seconds,gpu_hours,ru_charge,note
+exp_01ky5kxdbgfvt8rhn7d03hs4ca,artifact://devoteam-069866/experiments/exp_01ky5kxdbgfvt8rhn7d03hs4ca/,measured,H100,1,14427,4.0075,,"Per-job ledger covers completed, failed-timeout, and cancelled calibration jobs; no RU charge record survives."
+exp_01kxp8428pe5xbjehq788cmrz5,artifact://devoteam-069866/experiments/exp_01kxp8428pe5xbjehq788cmrz5/,unavailable,,,,,,Scientific outputs survive; no durable per-job accelerator or RU ledger was identified.
+exp_01kxpfhhy7fkpvmetpg6v2hrka,artifact://devoteam-069866/experiments/exp_01kxpfhhy7fkpvmetpg6v2hrka/,unavailable,,,,,,Scientific outputs survive; no durable per-job accelerator or RU ledger was identified.
+exp_01kxpgv707fp68vvyttwd8ke11,artifact://devoteam-069866/experiments/exp_01kxpgv707fp68vvyttwd8ke11/,unavailable,,,,,,"A contrast shard records a six-hour wall-limit failure, but accelerator type, count, billed seconds, and RU charge are absent, so it cannot be converted to H100-hours."
+exp_01kxq137dhfxb9jq9ea2hv0p2z,artifact://devoteam-069866/experiments/exp_01kxq137dhfxb9jq9ea2hv0p2z/,unavailable,,,,,,Scientific outputs survive; no durable per-job accelerator or RU ledger was identified.
+exp_01kxq9hkt0ftm8mt7en2v5zzvd,artifact://devoteam-069866/experiments/exp_01kxq9hkt0ftm8mt7en2v5zzvd/,unavailable,,,,,,Scientific outputs survive; no durable per-job accelerator or RU ledger was identified.
+exp_01kxqn25bzf3daw7sk7zqfty0z,artifact://devoteam-069866/experiments/exp_01kxqn25bzf3daw7sk7zqfty0z/,unavailable,,,,,,Scientific outputs survive; no durable per-job accelerator or RU ledger was identified.
+exp_01kxqssmngf8h90nhdmpbt61yr,artifact://devoteam-069866/experiments/exp_01kxqssmngf8h90nhdmpbt61yr/,unavailable,,,,,,Scientific outputs survive; no durable per-job accelerator or RU ledger was identified.
+exp_01kxr596b0e1qvaeg1yzjvpgnc,artifact://devoteam-069866/experiments/exp_01kxr596b0e1qvaeg1yzjvpgnc/,unavailable,,,,,,Scientific outputs survive; no durable per-job accelerator or RU ledger was identified.
+exp_01ky70vc2yew9r7bzn1vr8fyr9,,measured-zero,,0,0,0.0,,CPU-only code export and artifact preparation; no scheduler or accelerator job was launched.

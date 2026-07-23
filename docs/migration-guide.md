@@ -40,6 +40,7 @@ Validation commands do not infer or download. New inference orchestration belong
 | paired and permutation statistics | `evaluation.statistics` |
 | steering, patching, mediation | `interventions.steering`, `interventions.patching`, `interventions.mediation` |
 | causalab/SGLang/lm-eval calls | callback protocols in `integrations.goodfire` |
+| scalar-EOS generation and ad hoc completion checks | `generation_contract` terminal normalization, validity, span, and alignment records |
 | CSV/pickle output conventions | checksummed result manifests plus `provenance` utilities |
 | empirical “law mining” | candidate-only workflow documented in [laws](laws.md) |
 
@@ -51,6 +52,9 @@ Historical modules such as `runner`, `analysis`, `baselines`, `separability`, `c
 - **Random walk:** categorical random-walk basis analysis fails instead of returning coefficients that may be treated as Euclidean orthogonal. Graph-only legacy quantities must be labeled as such.
 - **Data access:** core validation uses local files. It does not download datasets, models, or tokenizers.
 - **Inference:** no inference occurs from config, prompt, result, schema, or claim validation.
+- **Generation validity:** preserve every terminal ID declared by the model generation configuration. Capped, repetitive, empty-final, or missing-close traces remain auditable but are ineligible for scoring.
+- **Online stopping:** repetition stopping is opt-in because it changes output. Post-hoc classification can be added without changing decoding.
+- **Historical outputs:** files without terminal and repetition provenance cannot be certified retroactively. Audit or regenerate them rather than assuming an ordinary completion.
 - **Splits:** source-task and template-family isolation is explicit and validated; row-random splitting is insufficient.
 - **Fitting:** preprocessing and selection belong inside grouped nested fitting.
 - **Claims:** a numerical empirical claim requires a validated claim-ledger entry linked to a checksummed result manifest.

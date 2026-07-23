@@ -114,7 +114,10 @@ def cmd_run(args):
             logger.info("=== Generation stage: %s ===", rc.name)
             try:
                 run_model_with_generation(
-                    rc, max_new_tokens=args.max_new_tokens, temperature=args.temperature
+                    rc,
+                    max_new_tokens=args.max_new_tokens,
+                    temperature=args.temperature,
+                    stop_repetition=args.stop_repetition,
                 )
             except Exception as e:
                 logger.error("Generation stage for %s failed: %s", rc.name, e)
@@ -225,6 +228,11 @@ def build_parser() -> argparse.ArgumentParser:
     r.add_argument("--generate", action="store_true", help="also run the behavioral generation stage")
     r.add_argument("--max-new-tokens", type=int, default=160)
     r.add_argument("--temperature", type=float, default=0.7)
+    r.add_argument(
+        "--stop-repetition",
+        action="store_true",
+        help="opt in to online repetition stopping; changes generated output",
+    )
     r.add_argument("--allow-download", action="store_true", help="permit HF downloads (default: cache only)")
     r.add_argument("--analyze", action="store_true", help="run analysis+plots after the sweep")
     r.set_defaults(func=cmd_run)

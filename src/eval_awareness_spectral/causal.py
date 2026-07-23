@@ -33,6 +33,7 @@ import torch
 
 from spectral_trust import GSPDiagnosticsFramework
 
+from .generation_contract import assess_generation
 from .prompts import build_prompts, load_framings, load_tasks
 from .runner import RunConfig, _free_cuda, _gsp_config
 
@@ -170,13 +171,22 @@ def _degenerate(text: str) -> int:
 
 
 @torch.no_grad()
-def _generate(framework, text: str, max_new_tokens: int = 96) -> str:
+def _generate(framework, text: str, max_new_tokens: int = 96) -> tuple[str, dict]:
     tok = framework.instrumenter.tokenizer
     model = framework.instrumenter.model
     inputs = tok(text, return_tensors="pt").to(model.device)
     gen = model.generate(**inputs, max_new_tokens=max_new_tokens, do_sample=False,
                          pad_token_id=tok.pad_token_id or tok.eos_token_id)
-    return tok.decode(gen[0][inputs["input_ids"].shape[1]:], skip_special_tokens=True).strip()
+    new_tokens = gen[0][inputs["input_ids"].shape[1]:]
+    token_ids = [int(value) for value in new_tokens.tolist()]
+    assessment = assess_generation(
+        token_ids,
+        generation_config=getattr(model, "generation_config", None),
+        tokenizer=tok,
+        generated_cap=max_new_tokens,
+    )
+    response = tok.decode(new_tokens, skip_special_tokens=True).strip()
+    return response, assessment.provenance_dict()
 
 
 def run_causal(rc: RunConfig, npz: Dict, out_dir, alphas=(0.0, 0.05, 0.1, 0.2, 0.4),
@@ -231,12 +241,12 @@ def run_causal(rc: RunConfig, npz: Dict, out_dir, alphas=(0.0, 0.05, 0.1, 0.2, 0
                     with _steer(framework.instrumenter.model,
                                 v if dname != "none" else None, a, layer_band):
                         try:
-                            resp = _generate(framework, p.text, max_new_tokens)
+                            resp, termination = _generate(framework, p.text, max_new_tokens)
                         except Exception as e:
                             logger.error("gen failed (%s/%s/a=%s): %s", p.task_id, dname, a, e)
                             continue
                     r = {"model": rc.name, "task_id": p.task_id, "direction": dname, "alpha": a,
-                         "degenerate": _degenerate(resp), "response": resp[:400]}
+                         "degenerate": _degenerate(resp), "response": resp[:400], **termination}
                     r.update(_readouts(resp))
                     rows.append(r)
 
@@ -244,7 +254,7 @@ def run_causal(rc: RunConfig, npz: Dict, out_dir, alphas=(0.0, 0.05, 0.1, 0.2, 0
     if not df.empty:
         df.to_csv(out_dir / "causal_responses.csv", index=False)
         # summarize on FLUENT generations only (drop broken output from the means)
-        fluent = df[df.degenerate == 0]
+        fluent = df[(df.degenerate == 0) & df.termination_scoring_eligible]
         agg_cols = ["refusal", "hedging", "meta_eval", "n_words"]
         summ = (fluent.groupby(["direction", "alpha"])[agg_cols].mean()
                 .join(df.groupby(["direction", "alpha"]).size().rename("n"))

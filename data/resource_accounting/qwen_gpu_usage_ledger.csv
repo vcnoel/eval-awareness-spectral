@@ -1,0 +1,13 @@
+job_id,purpose,state,gpu_count,elapsed_seconds,gpu_seconds
+656513535599,initial_512_smoke,COMPLETED,1,291,291
+173544996399,shortest_512_diagnostic,COMPLETED,1,334,334
+857745125753,adaptive_canonical_preflight,COMPLETED,1,195,195
+199693695946,host_bound_batch_benchmark,COMPLETED,1,3716,3716
+169468092151,eager_determinism_preflight,COMPLETED,1,210,210
+103851682876,buffered_determinism_preflight,COMPLETED,1,175,175
+182325291421,optimized_batch_benchmark,COMPLETED,1,620,620
+201531729866,opaque_24_row_adaptive_attempt,FAILED_TIMEOUT,1,7200,7200
+204624205225,short_stratum_adaptive,COMPLETED,1,517,517
+310013229443,medium_stratum_adaptive,COMPLETED,1,583,583
+326945092628,long_stratum_cancelled_after_stop,FAILED_CANCELLED,1,586,586
+TOTAL,cumulative,,1,14427,14427

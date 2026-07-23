@@ -8,7 +8,7 @@ This repository separates three variables that are often collapsed under “eval
 
 The research question is whether controlled changes in E alter R and P, which representations mediate those changes, and which simpler nuisance explanations survive. The package supplies CPU-safe protocol, representation, evaluation, provenance, and release utilities for that question.
 
-> **Pre-results status:** no validated empirical artifacts are bundled with this repository. There are no tracked model outputs, activation caches, result manifests, or validated numerical claims. The documents describe definitions, conjectures, and a protocol to run later.
+> **Pre-results status:** no validated scientific result is bundled with this repository. A compact, checksum-addressed token fixture from a failed generation instrument is included only to regression-test termination handling; it cannot support an evaluation-awareness claim. There are no activation caches, scientific result manifests, or validated numerical claims.
 
 ## Spectral convention
 
@@ -38,9 +38,30 @@ eval-awareness-spectral validate-config path/to/protocol.json
 eval-awareness-spectral validate-prompts path/to/prompts.jsonl
 eval-awareness-spectral validate-results path/to/results_manifest.json
 eval-awareness-spectral claim-audit --ledger path/to/claim_ledger.json README.md docs/*.md
+python scripts/build_resource_accounting.py --check
 ```
 
 The core accepts local JSON/JSONL manifests and NumPy-like activation arrays. Prompt manifests preserve source-task identity, template family, factor vector, condition valence, content and rendered-text hashes, task-token hash, tokenizer revision, token span, split, optional R label, and optional P outcome. Split validation keeps source-task and template groups out of confirmation data used for final claims.
+
+## Generation validity contract
+
+`eval_awareness_spectral.generation_contract` is a dependency-free contract for generated-token validity. It normalizes every EOS ID declared by `model.generation_config`, adds tokenizer EOS only as a compatible fallback, classifies primary EOS, secondary EOS, repetition loops, token caps, and errors, and parses reasoning-close/final-answer spans. Repetition stops are always incomplete, degenerate, and ineligible for scoring.
+
+```python
+from eval_awareness_spectral import assess_generation, parse_final_span
+
+assessment = assess_generation(
+    generated_token_ids,
+    generation_config=model.generation_config,
+    tokenizer=tokenizer,
+    generated_cap=4096,
+)
+span = parse_final_span(generated_token_ids, [close_marker_ids], assessment.termination)
+if not assessment.termination.scoring_eligible:
+    retain_for_audit_but_do_not_score(generated_token_ids)
+```
+
+Post-hoc classification does not change model behavior. The deprecated generation CLI keeps online repetition stopping behind the explicit `--stop-repetition` flag because enabling it changes output. Historical outputs without terminal and repetition metadata cannot be certified retroactively; audit or regenerate them before reuse. See [generation contract](docs/generation-contract.md).
 
 ## Optional integrations
 

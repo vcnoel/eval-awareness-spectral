@@ -39,6 +39,8 @@ jobs:
         run: uv run pytest --cov=eval_awareness_spectral --cov-report=term-missing
       - name: Claim provenance
         run: uv run eval-awareness-spectral claim-audit --ledger paper/claim_ledger.json README.md docs/*.md main.tex
+      - name: Resource-accounting arithmetic and generated files
+        run: uv run python scripts/build_resource_accounting.py --check
       - name: Configuration and packaged schema
         run: |
           uv run eval-awareness-spectral validate-config configs/protocol.example.json
