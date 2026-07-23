@@ -3,105 +3,98 @@
 ## Provenance
 
 - Target repository: `vcnoel/eval-awareness-spectral`
-- Starting revision: `4bfd36c39494b5425276de0b893aea969503a49b`
-- Protected export branch: `agent/export-10`
-- Inspected public dependency: `vcnoel/spectral-trust` at `f80028c4f39fcc0a54f4976897c1cca76a2578dc`
-- Dependency source was inspected only to verify its public operator/eigensolver API and the random-walk mathematical defect. No source was copied or vendored.
-- Machine-readable outcomes: [`verification-results.json`](verification-results.json)
+- Base revision: `27cf2420bececeff902ba91df58ac4e4fa3a854a` (current `main` after merged PR #1)
+- Protected export branch: `agent/export-12`
+- Source experiment: `exp_01ky5kxdbgfvt8rhn7d03hs4ca`
+- Regression source: `artifact://devoteam-069866/experiments/exp_01ky5kxdbgfvt8rhn7d03hs4ca/qwen3-0.6b/adaptive-shards-v1/short/stages_v1/cap4096_v1/rollouts.jsonl`, SHA256 `a2f10a9b51e1bc6123f3d8e3623aeb9bd71417630b16a9709ca42b754306ccfb`
+- Machine-readable outcomes: [`verification-results.json`](verification-results.json) and [`reproduction-results.json`](reproduction-results.json)
 
-## Scientific corrections checked
+The source experiment was read only. The export rewrites the termination logic as a typed dependency-free API; it does not copy the experiment runner, model glue, scheduler code, or activation implementation.
 
-- The basis-producing default is the symmetric normalized Laplacian.
-- Random-walk basis analysis fails before eigendecomposition, including on regular graphs.
-- Accepted decompositions check symmetry, finite values, eigenvalue order, Euclidean orthogonality, reconstruction, and eigenpair residual.
-- Fixed-combinatorial Dirichlet energy is invariant to ordinary token-uniform shifts in synthetic tests.
-- The degree-weighted normalized null mode and lifted DC/AC Frobenius accounting are tested.
-- Source-task and template-family leakage into confirmation are rejected.
-- Scaling, principal components, feature selection, tuning, probe fitting, and thresholds remain inside grouped training folds.
-- Permutations rebuild the complete selected pipeline.
-- Transfer requires template-family metadata and rejects shared rows, source tasks, template families, negative examples, and optionally model families.
-- Untagged historical diagnostics fail instead of being relabeled as symmetric; affected legacy outputs must be recomputed.
-- Causal tests target explicit layers/tokens/subspaces and require behavioral sign of life, bidirectional directions, and matched controls.
+## Generation contract checked
+
+- Model generation configuration accepts scalar, list, tuple, or absent terminal IDs; every declared ID is preserved in order.
+- Tokenizer EOS is appended only as a compatible fallback.
+- Primary EOS, secondary EOS, repetition loop, max-token cap, and error are mutually exclusive structured reasons.
+- A repetition loop is always incomplete, degenerate, and ineligible for scoring, including after a reasoning close marker.
+- Final spans distinguish EOS before close, close with empty final, cap after partial final, loop after close, missing close, and valid final.
+- Nonterminal generated tokens stay one-to-one with selected activation indices for every termination reason.
+- Online detection is deterministic over one unpadded row and rejects multi-row batches rather than globally stopping unrelated rows.
+- Legacy decoding arguments are unchanged by default. Online stopping is available only through the explicit `--stop-repetition` flag; causal and benchmark paths classify post hoc.
+- Historical files without termination metadata are not retroactively reinterpreted.
+
+## Reproduction check
+
+The compact fixture preserves the actual failure's eight-token repeated unit, source positions, rollout ID, artifact reference, and source checksum. The detector catches six copies at exclusive generated index 329, before the recorded 4,096-token cap.
+
+False positives are zero across five registered controls: a short refrain, a four-copy short chorus, an ordinary enumeration, SQL/code-like output, and punctuation-rich output. The ordered Qwen terminal set `[151645, 151643]`, batch-padding invariance, per-row terminals, close-marker variants, scorer eligibility, and activation alignment all pass.
+
+The accounting reproduction also passes. Eleven Qwen ledger rows sum exactly to 14,427 H100-seconds, eight prior roots retain null usage fields rather than zero, and 229.4 RU divided by 4.0075 H100-hours yields the displayed 57.2427 RU/H100-hour over-attribution ceiling within `0.00005`. The report never labels that ceiling a billing rate.
 
 ## Commands and outcomes
-
-### Frozen environment
-
-```bash
-uv lock --check
-```
-
-Pass. The committed lock resolves the single `pyproject.toml` dependency declaration. NumPy is bounded below the incompatible typing-stub release.
 
 ### Python 3.11
 
 ```bash
-UV_PYTHON_INSTALL_DIR="$HOME/.cache/uv/python" uv python install 3.11
-UV_PYTHON_INSTALL_DIR="$HOME/.cache/uv/python" \
-  uv run --isolated --python 3.11 --extra dev \
+uv run --isolated --python 3.11 --extra dev ruff check \
+  src tests paper/generate_results_table.py scripts/build_resource_accounting.py
+uv run --isolated --python 3.11 --extra dev mypy src/eval_awareness_spectral
+uv run --isolated --python 3.11 --extra dev \
   pytest --cov=eval_awareness_spectral --cov-report=term-missing -q
-UV_PYTHON_INSTALL_DIR="$HOME/.cache/uv/python" \
-  uv run --isolated --python 3.11 --extra dev mypy src/eval_awareness_spectral
 ```
 
-Pass: 69 tests, zero failures, and strict type checking over 28 source files. Statement coverage is 97.27% on the accepted plan's exact correctness surface: `claims.py`, `provenance.py`, `data/splits.py`, `evaluation/statistics.py`, `evaluation/transfer.py`, `representations/attention_graph.py`, and `representations/spectral.py`.
+Pass: Ruff clean, strict mypy clean across 29 source files, 98 tests and zero failures in 13.17 seconds. Registered statement coverage is 96.42% against a 90% gate.
 
 ### Python 3.12
 
 ```bash
 uv run --isolated --python 3.12 --extra dev ruff check \
-  src tests paper/generate_results_table.py
+  src tests paper/generate_results_table.py scripts/build_resource_accounting.py
 uv run --isolated --python 3.12 --extra dev mypy src/eval_awareness_spectral
 uv run --isolated --python 3.12 --extra dev \
   pytest --cov=eval_awareness_spectral --cov-report=term-missing -q
 ```
 
-Pass: Ruff clean; strict mypy clean; 69 tests and zero failures. The same seven-file registered correctness surface reaches 97.27% statement coverage against a 90% threshold; the percentage is not presented as whole-package coverage.
+Pass: Ruff clean, strict mypy clean across 29 source files, 98 tests and zero failures in 14.04 seconds. The same registered surface reaches 96.42% statement coverage.
 
-### Claim and configuration validation
+### Arithmetic, claims, and lock
 
 ```bash
-uv run --isolated --python 3.12 --extra dev \
-  eval-awareness-spectral validate-config configs/protocol.example.json
-uv run --isolated --python 3.12 --extra dev \
-  eval-awareness-spectral claim-audit --ledger paper/claim_ledger.json \
-  README.md docs/*.md main.tex
+uv lock --check
+uv run --no-sync eval-awareness-spectral validate-config configs/protocol.example.json
+uv run --no-sync eval-awareness-spectral claim-audit \
+  --ledger paper/claim_ledger.json README.md docs/*.md docs/upstream-issues/*.md main.tex
+uv run --no-sync python scripts/build_resource_accounting.py --check
 ```
 
-Pass. The example configuration hash is `sha256:daeeb7f418ab8c35bdda61d94586c8e24e01c227122ea84de3040b89c402c881`. Ten prose files passed with no unmanifested empirical number.
+Pass: the 90-package lock is current; the configuration hash remains `sha256:daeeb7f418ab8c35bdda61d94586c8e24e01c227122ea84de3040b89c402c881`; 16 prose files pass the scientific claim audit; generated Markdown, HTML, and CSV accounting files exactly match the machine-readable input.
 
-### Clean wheel installation
+### Clean wheel and public API
 
 ```bash
 uv build --wheel
-uv venv --python 3.12 "$TEMP/venv"
-uv pip install --python "$TEMP/venv/bin/python" \
-  dist/eval_awareness_spectral-0.2.0-py3-none-any.whl
+python -m venv "$TEMP/venv"
+"$TEMP/venv/bin/pip" install dist/eval_awareness_spectral-0.3.0-py3-none-any.whl
 cd "$TEMP"
 "$TEMP/venv/bin/eval-awareness-spectral" --help
 "$TEMP/venv/bin/eval-awareness-spectral" schema
-"$TEMP/venv/bin/eval-awareness-spectral" validate-config \
-  "$CHECKOUT/configs/protocol.example.json"
+"$TEMP/venv/bin/eval-awareness-spectral" validate-config "$CHECKOUT/configs/protocol.example.json"
 ```
 
-Pass outside the source tree. The reviewed wheel is 128,150 bytes; package data resolves; CLI help, schema, and config validation work. Import inspection confirmed that `torch`, `transformers`, `datasets`, `spectral_trust`, `goodfire_core`, `causalab`, `sglang`, and `lm_eval` were not imported.
+Pass outside the source tree. The wheel is 135,369 bytes. The public termination API imports and classifies secondary EOS correctly. Import inspection confirms that `torch`, `transformers`, `datasets`, `spectral_trust`, `goodfire_core`, `causalab`, `sglang`, and `lm_eval` are not loaded.
 
-### Manuscript
+### Report, delivery, and repository scans
 
-```bash
-tectonic -X compile main.tex --outdir /tmp/eas-paper-build \
-  --keep-logs --keep-intermediates
-```
+The standalone resource HTML parses with one `h1`, two complete tables, and no root-absolute local asset links. The three upstream issue packets cite exact lines at `f80028c4f39f`, `f75f834a1cd2`, and `9d852fae1a91`. Their historical-impact statements request audits and do not declare published results invalid.
 
-Pass with Tectonic 0.15.0: six-page PDF, nine resolved bibliography entries, no undefined citation or reference. The repository CI independently compiles with `latexmk` in a CPU-only GitHub Action.
+The tracked patch contains no Lab-local path, secret, model artifact, scheduler command, GPU request, model/tokenizer load, dataset download, or inference call. The current export used zero scheduler jobs and zero GPU-seconds.
 
-### Repository and execution scan
-
-The final diff against `origin/main` contains no result/model artifact extension, no Lab-local experiment or subagent path, no direct optional/private-runtime import, and no hard-coded host instruction. No model or tokenizer was loaded; no dataset was downloaded; no inference, activation harvest, generation, steering, GPU allocation, or empirical experiment was run. Package and TeX dependencies were the only network downloads.
+The export environment has git push authorization for the approved target but no authenticated GitHub issue API. No upstream issue was opened; complete bodies and direct manual-creation links are in [`docs/upstream-issues/`](docs/upstream-issues/). Draft-PR delivery remains pending until the reviewed branch is pushed.
 
 ## Residual risks
 
-- No artifact-backed empirical study exists. The repository is intentionally pre-results, and publishable conclusions require a separately approved run.
-- The deprecated empirical runner was not executed. Historical quantities affected by the random-walk defect must be recomputed rather than migrated by relabeling.
-- Optional Goodfire, causalab, SGLang, and evaluation-harness seams were validated with structural CPU mocks, not live private runtimes.
-- The workflow file parses locally and all equivalent commands pass. Hosted GitHub Actions can run only after the draft PR is opened.
+- The detector is deliberately conservative. It can miss irregular semantic loops below the repeated-mass or rolling-coverage thresholds.
+- The online stopping adapter was tested through its dependency-free callable contract, not a live Transformers model, because model and tokenizer loading were prohibited.
+- Historical outputs lacking termination metadata still require repository-specific cap and repetition audits.
+- The three upstream issues require manual creation in an authenticated GitHub session.
+- The actual RU/H100-hour conversion remains unidentified; the report supplies only an explicit over-attribution ceiling.

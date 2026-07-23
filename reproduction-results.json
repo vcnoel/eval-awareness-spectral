@@ -1,45 +1,67 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "status": "pass",
-  "scope": "registered code-and-documentation protocol invariants; empirical reproduction is not applicable because no source experiment or artifact-backed result exists",
+  "source_experiment_eid": "exp_01ky5kxdbgfvt8rhn7d03hs4ca",
+  "scope": "CPU-only reproduction of the recorded generation-instrument failure and resource-accounting facts; no model, tokenizer, dataset, inference, or scientific rerun",
   "metrics": [
     {
-      "name": "validated empirical claims bundled",
+      "name": "actual Qwen loop detected before source cap",
+      "recorded": "4,096-token capped failure",
+      "reproduced": "detected at exclusive generated index 329",
+      "tolerance": "detected before token 4,096",
+      "within": true
+    },
+    {
+      "name": "legitimate repetitive negative-control false positives",
+      "recorded": 0,
+      "reproduced": "0/5",
+      "tolerance": "exactly zero",
+      "within": true
+    },
+    {
+      "name": "Qwen declared terminal IDs preserved",
+      "recorded": [151645, 151643],
+      "reproduced": [151645, 151643],
+      "tolerance": "exact ordered match",
+      "within": true
+    },
+    {
+      "name": "generated-token activation alignment",
+      "recorded": "one activation per nonterminal generated token",
+      "reproduced": "equal lengths for eos, secondary_eos, repetition_loop, max_tokens, and error cases",
+      "tolerance": "all five termination reasons",
+      "within": true
+    },
+    {
+      "name": "Qwen calibration H100-seconds",
+      "recorded": 14427,
+      "reproduced": 14427,
+      "tolerance": "exact sum of 11 per-job rows",
+      "within": true
+    },
+    {
+      "name": "documented-only attribution ceiling",
+      "recorded": "57.2427 RU/H100-hour",
+      "reproduced": "57.2427 RU/H100-hour",
+      "tolerance": "absolute error <= 0.00005; explicitly not a billing rate",
+      "within": true
+    },
+    {
+      "name": "unavailable prior experiment usage represented as zero",
       "recorded": 0,
       "reproduced": 0,
-      "tolerance": "exact",
+      "tolerance": "exact; eight roots retain null usage fields",
       "within": true
     },
     {
-      "name": "unsafe random-walk basis paths accepted",
-      "recorded": 0,
-      "reproduced": 0,
-      "tolerance": "exact",
-      "within": true
-    },
-    {
-      "name": "registered six-area correctness-surface statement coverage",
-      "recorded": ">=90%",
-      "reproduced": "97.27% across claims, provenance, splits, statistics, transfer, and spectral/operator validation",
-      "tolerance": ">=90%",
-      "within": true
-    },
-    {
-      "name": "CPU synthetic tests passing",
-      "recorded": "complete suite",
-      "reproduced": "69/69 on Python 3.11 and 69/69 on Python 3.12",
+      "name": "CPU test suite",
+      "recorded": "all tests pass",
+      "reproduced": "98/98 on Python 3.11 and 98/98 on Python 3.12",
       "tolerance": "all pass",
       "within": true
     },
     {
-      "name": "model, dataset, inference, or GPU jobs",
-      "recorded": 0,
-      "reproduced": 0,
-      "tolerance": "exact",
-      "within": true
-    },
-    {
-      "name": "undefined manuscript citations",
+      "name": "model, tokenizer, dataset, inference, or GPU jobs",
       "recorded": 0,
       "reproduced": 0,
       "tolerance": "exact",
