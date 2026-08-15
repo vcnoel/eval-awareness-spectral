@@ -1,0 +1,16 @@
+{
+  "_comment": "Within-family size ladders to test the eval-awareness power-law (larger -> stronger detection), sized for a 16 GB RTX 5080. dtype: fp32 for <=1.5B, bf16 for 2-8B (0.2.2 upcasts to fp32 for the spectral analysis internally). 9B+ needs 4bit (set dtype 'int4' and add bitsandbytes) — omitted here to keep the default sweep OOM-safe. All hf_ids are in the local HF cache.",
+
+  "models": [
+    {"name": "qwen2.5-0.5b-it", "hf_id": "Qwen/Qwen2.5-0.5B-Instruct", "dtype": "float32", "family": "qwen2.5", "params_b": 0.5},
+    {"name": "qwen2.5-3b-it",   "hf_id": "Qwen/Qwen2.5-3B-Instruct",   "dtype": "bfloat16", "family": "qwen2.5", "params_b": 3.0},
+    {"name": "qwen2.5-7b-it",   "hf_id": "Qwen/Qwen2.5-7B-Instruct",   "dtype": "bfloat16", "family": "qwen2.5", "params_b": 7.0},
+
+    {"name": "llama-3.2-1b-it", "hf_id": "meta-llama/Llama-3.2-1B-Instruct", "dtype": "float32", "family": "llama3", "params_b": 1.0},
+    {"name": "llama-3.2-3b-it", "hf_id": "meta-llama/Llama-3.2-3B-Instruct", "dtype": "bfloat16", "family": "llama3", "params_b": 3.0},
+    {"name": "llama-3.1-8b-it", "hf_id": "meta-llama/Llama-3.1-8B-Instruct", "dtype": "bfloat16", "family": "llama3", "params_b": 8.0},
+
+    {"name": "gemma-3-1b-it",   "hf_id": "google/gemma-3-1b-it", "dtype": "float32", "family": "gemma", "params_b": 1.0},
+    {"name": "gemma-2-2b-it",   "hf_id": "google/gemma-2-2b-it", "dtype": "bfloat16", "family": "gemma", "params_b": 2.0}
+  ]
+}

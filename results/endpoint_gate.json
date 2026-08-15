@@ -1,0 +1,113 @@
+{
+  "model": "qwen2.5-7b",
+  "n_items": 120,
+  "framings": [
+    "deploy_a",
+    "eval_benchmark",
+    "eval_redteam",
+    "eval_certification",
+    "eval_leaderboard",
+    "eval_rubric",
+    "eval_oversight",
+    "neutral_documentation",
+    "neutral_reference_library",
+    "neutral_correspondence",
+    "neutral_archive",
+    "neutral_technical_support",
+    "neutral_editorial"
+  ],
+  "families": {
+    "deploy_a": "deploy",
+    "eval_benchmark": "eval",
+    "eval_redteam": "eval",
+    "eval_certification": "eval",
+    "eval_leaderboard": "eval",
+    "eval_rubric": "eval",
+    "eval_oversight": "eval",
+    "neutral_documentation": "neutral",
+    "neutral_reference_library": "neutral",
+    "neutral_correspondence": "neutral",
+    "neutral_archive": "neutral",
+    "neutral_technical_support": "neutral",
+    "neutral_editorial": "neutral"
+  },
+  "sesoi_prob": 0.02,
+  "endpoints": {
+    "P_gold": {
+      "eval_mean": 0.8111453066218856,
+      "neutral_mean": 0.6895689416280488,
+      "paired_difference": 0.12157636499383667,
+      "ci95": [
+        0.09212162459585971,
+        0.1533968954894763
+      ],
+      "excludes_zero": true,
+      "per_framing_mean": {
+        "deploy_a": 0.7725914046949981,
+        "eval_benchmark": 0.8106116855912594,
+        "eval_redteam": 0.8192598968526424,
+        "eval_certification": 0.8027133188249761,
+        "eval_leaderboard": 0.8322710298959071,
+        "eval_rubric": 0.7904705981631992,
+        "eval_oversight": 0.811545310403329,
+        "neutral_documentation": 0.7689601715034826,
+        "neutral_reference_library": 0.7606001328656931,
+        "neutral_correspondence": 0.4240296095881301,
+        "neutral_archive": 0.7256450004912646,
+        "neutral_technical_support": 0.7077162904351136,
+        "neutral_editorial": 0.7504624448846092
+      },
+      "equivalence_within_sesoi": false
+    },
+    "logprob_gold": {
+      "eval_mean": -1.3726038257995623,
+      "neutral_mean": -2.324232949061439,
+      "paired_difference": 0.9516291232618764,
+      "ci95": [
+        0.6145023039789957,
+        1.2553877580216897
+      ],
+      "excludes_zero": true,
+      "per_framing_mean": {
+        "deploy_a": -1.1908975687388497,
+        "eval_benchmark": -1.4853974865989141,
+        "eval_redteam": -1.3690594897326642,
+        "eval_certification": -1.4644069148397472,
+        "eval_leaderboard": -1.280396496038492,
+        "eval_rubric": -1.3674764452372377,
+        "eval_oversight": -1.268886122350318,
+        "neutral_documentation": -1.3747422732874839,
+        "neutral_reference_library": -1.1703246141278214,
+        "neutral_correspondence": -6.50870832502842,
+        "neutral_archive": -1.4862217609372843,
+        "neutral_technical_support": -2.0677630971302277,
+        "neutral_editorial": -1.3376376238573964
+      }
+    },
+    "logprob_margin": {
+      "eval_mean": 7.784813698629538,
+      "neutral_mean": 2.8555964089102215,
+      "paired_difference": 4.9292172897193165,
+      "ci95": [
+        4.135336038716551,
+        5.711118792934965
+      ],
+      "excludes_zero": true,
+      "per_framing_mean": {
+        "deploy_a": 5.328445115685463,
+        "eval_benchmark": 8.415209758281708,
+        "eval_redteam": 7.2516837845246,
+        "eval_certification": 8.962225548923016,
+        "eval_leaderboard": 9.335889676213265,
+        "eval_rubric": 5.731215314567089,
+        "eval_oversight": 7.012658109267552,
+        "neutral_documentation": 4.890233379602432,
+        "neutral_reference_library": 4.004794403413931,
+        "neutral_correspondence": -0.4743009517590205,
+        "neutral_archive": 2.939569541811943,
+        "neutral_technical_support": 2.4345397765437764,
+        "neutral_editorial": 3.3387423038482664
+      }
+    }
+  }
+}

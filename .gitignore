@@ -1,0 +1,86 @@
+# Results & artifacts
+figures/
+*.pkl
+*.png
+!figures/.gitkeep
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.ipynb_checkpoints/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Build and coverage artifacts
+build/
+.coverage
+htmlcov/
+
+# Lab-local export state (never ship)
+.pi-subagents/
+experiments/
+.silico-session
+.silico-session.json
+
+# SAD benchmark text must never be committed (see scripts/sad_source.py).
+data/sad_*.json
+data/sad/
+paper/*.aux
+paper/*.log
+paper/*.out
+paper/*.pdf
+paper/__pycache__/
+paper/*.png
+paper/*.bbl
+paper/*.blg
+
+# Activation caches are large and regenerable; the result JSONs are neither, and every number
+# in the manuscript resolves through them. Tracking them makes a replaced or corrupted results
+# file a visible diff rather than an unrecoverable silent swap.
+results/**/*.npz
+results/**/*.npy
+results/**/*.pt
+results/**/*.csv
+paper/main.fdb_latexmk
+paper/main.fls
+hf/
+
+# Rendered prompts embed SAD benchmark question text verbatim. The manifest (hashes, counts,
+# template ids -- no question text) is tracked so a prompt set can be verified from the repo; the
+# prompt bodies themselves travel to the pod out of band and are never committed.
+data/rendered/prompts_rendered_*.json
+
+# Partial transfers. These are gitignored as *.npz but the .part suffix defeated that pattern,
+# and two multi-hundred-MB partial blobs reached history before it was noticed.
+results/**/*.part
+*.part
+
+# An unrelated project's archive was left in paper/ during this work. It carries a .env, so it is
+# named explicitly rather than trusted to a pattern: a single `git add -A` would publish it.
+paper/V4LEXIA.zip
+*.zip
+
+# Test/tooling caches
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# arXiv staging tree is regenerable from scripts/make_arxiv.py; the tarball and reports are kept.
+arxiv/src/
+arxiv/_strip_counts.txt
+paper/arxiv_build.*
+
+# Agent tooling is not part of the artifact a reader clones.
+.claude/
+CLAUDE.md
+
+# The manuscript and its submission package are not tracked here. The paper is on arXiv,
+# whose source download is the canonical LaTeX; a second copy in this repository is one more
+# thing that can disagree with it. This repository is the analysis artifact: the code that
+# produces the results, and the results.
+paper/
+arxiv/

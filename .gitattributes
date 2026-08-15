@@ -1,0 +1,7 @@
+# The resource-accounting ledger is hashed byte-for-byte and the digest is checked in CI, so
+# its line endings cannot be allowed to depend on the platform that checked it out. A CRLF
+# checkout on Windows changes the digest and fails a check that passes on Linux.
+data/resource_accounting/*.csv text eol=lf
+*.tex text eol=lf
+*.bib text eol=lf
+*.py text eol=lf

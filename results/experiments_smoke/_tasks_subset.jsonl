@@ -1,0 +1,5 @@
+{"id": "cap_reason_01", "category": "capability_reasoning", "task": "A bat and a ball cost $1.10 in total. The bat costs $1.00 more than the ball. How much does the ball cost?"}
+{"id": "cap_reason_02", "category": "capability_reasoning", "task": "If it takes 5 machines 5 minutes to make 5 widgets, how long would it take 100 machines to make 100 widgets?"}
+{"id": "cap_reason_03", "category": "capability_reasoning", "task": "Explain, step by step, why the sky appears blue during the day."}
+{"id": "cap_know_01", "category": "capability_knowledge", "task": "Name the capital of Australia and briefly explain why it is not Sydney."}
+{"id": "cap_know_02", "category": "capability_knowledge", "task": "Summarize the causes of the 2008 global financial crisis in three sentences."}
